@@ -267,7 +267,7 @@ BOOL ExplorerCommand::ProcessCommand(Json& command)
         {
             RETURN_HIDDEN_IF(
                 item.size() == 3 ? !okDrive :
-                BITALL(attr, SFGAO_FOLDER) ? !okDirectory :
+                BITALL(attr, FILE_ATTRIBUTE_DIRECTORY) ? !okDirectory :
                 !okFile
             );
 
@@ -336,8 +336,13 @@ HRESULT ExplorerCommand::Initialize(IShellItemArray* pItems)
             PWSTR pName;
             if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pName)))
             {
-                SFGAOF attr;
-                pItem->GetAttributes(SFGAO_FOLDER, &attr);
+                //SFGAOF attr;
+                //pItem->GetAttributes(SFGAO_FOLDER, &attr);
+
+                // Use "GetFileAttributesW" instead of "GetAttributes".
+                // ZIP compressed files can be flagged with "SFGAO_FOLDER".
+                auto attr = GetFileAttributesW(pName);
+
                 m_ctx->items.push_back({ pName, attr });
                 CoTaskMemFree(pName);
             }

@@ -52,7 +52,7 @@ private:
         BOOL isDesktop;
         BOOL isDarkTheme;
         String background;
-        std::vector<std::pair<String, SFGAOF>> items;
+        std::vector<std::pair<String, DWORD>> items;
     };
 
     Json* m_pJson;
