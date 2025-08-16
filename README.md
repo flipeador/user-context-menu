@@ -22,7 +22,7 @@ Create custom commands in the [modern context menu][contextmenu] and enable/disa
 
 > [!NOTE]
 > During installation:
-> 1. If the Windows settings is opened, enable [Developer Mode][devmode] before continuing.
+> 1. If the Windows settings opens, enable [Developer Mode][devmode] before continuing.
 > 2. Confirm the installation of the digital certificate when prompted.
 >
 > After installation:
