@@ -17,17 +17,18 @@ Create custom commands in the [modern context menu][contextmenu] and enable/disa
 
 ## Installation
 
-1. Make sure you have the [.NET 9 runtimes][netrt] installed.
-2. Download the latest version from the [Releases][releases] page.
-3. Unzip the downloaded file and execute `Install.ps1`.
+1. Download the latest version from the [Releases][releases] page.
+2. Unzip the downloaded file and execute `Install.ps1`.
 
 > [!NOTE]
 > During installation:
-> - Confirm the installation of the digital certificate when prompted.
-> - The Windows settings may open and ask you to enable [Developer Mode][devmode].
+> 1. If the Windows settings is opened, enable [Developer Mode][devmode] before continuing.
+> 2. Confirm the installation of the digital certificate when prompted.
 >
 > After installation:
-> - You may need to restart Windows Explorer for the menu item to appear. [^1]
+> - You may need to restart Windows Explorer for the commands to appear. [^1]
+>
+> Make sure you have the [.NET 9 runtimes][netrt] installed if you get an error.
 
 > [!TIP]
 > You can easily check the latest version from within the application:
