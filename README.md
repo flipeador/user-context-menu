@@ -4,7 +4,7 @@ Create custom commands in the [modern context menu][contextmenu] and enable/disa
 
 <p align="center">
   <img alt="Preview" src="assets/preview.png"> <br/> <br/>
-  <a href="https://github.com/flipeador/user-context-menu/releases/download/v1.0.0/package.x64.zip">
+  <a href="https://github.com/flipeador/user-context-menu/releases/download/v1.0.0/package.x64.7z">
     <img src="https://img.shields.io/badge/Releases-Direct download (v1.0.0)-orange.svg?style=for-the-badge"/>
   </a>
 </p>
