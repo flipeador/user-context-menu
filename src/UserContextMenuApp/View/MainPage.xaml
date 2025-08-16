@@ -1,0 +1,663 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="UserContextMenuApp.View.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:lo="using:UserContextMenuApp"
+    xmlns:mo="using:UserContextMenuApp.Model"
+    xmlns:co="using:UserContextMenuApp.Controls"
+    xmlns:cc="using:CommunityToolkit.WinUI.Controls"
+    mc:Ignorable="d"
+    NavigationCacheMode="Required">
+
+    <Page.Resources>
+        <DataTemplate
+            x:Key="PackageItemTemplate"
+            x:DataType="mo:PackageItem">
+            <TreeViewItem
+                Content="{x:Bind Text}"
+                ItemsSource="{x:Bind Ids}"/>
+        </DataTemplate>
+        <DataTemplate
+            x:Key="PackageClsidTemplate"
+            x:DataType="mo:PackageClsid">
+            <TreeViewItem>
+                <CheckBox
+                    Tag="{x:Bind KeyPath}"
+                    IsChecked="{x:Bind IsEnabled}"
+                    Click="Packages_Toggle">
+                    <TextBlock Text="{x:Bind Clsid}"/>
+                </CheckBox>
+            </TreeViewItem>
+        </DataTemplate>
+        <mo:PackageDataTemplateSelector
+            x:Key="PackageDataTemplateSelector"
+            PackageItemTemplate="{StaticResource PackageItemTemplate}"
+            PackageClsidTemplate="{StaticResource PackageClsidTemplate}"/>
+    </Page.Resources>
+
+    <Grid
+        Grid.Row="1">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="7*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- TreeView Commands -->
+        <Border
+            x:Name="e_leftPanel"
+            Padding="10,10,10,10"
+            BorderThickness="0,0,1,0"
+            BorderBrush="{ThemeResource ControlElevationBorderBrush}">
+            <Grid RowDefinitions="Auto,7*,Auto,3*">
+                <!-- Buttons -->
+                <StackPanel
+                    Spacing="10"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+                    <Button
+                        Click="AddChildCommand"
+                        ToolTipService.ToolTip="Add">
+                        <FontIcon Glyph="&#xECC8;"/>
+                    </Button>
+                    <Button
+                        Click="RemoveSelectedCommand"
+                        ToolTipService.ToolTip="Remove">
+                        <FontIcon Glyph="&#xE74D;"/>
+                    </Button>
+                    <Button
+                        Click="LoadCommands"
+                        ToolTipService.ToolTip="Refresh">
+                        <FontIcon Glyph="&#xE72C;"/>
+                    </Button>
+                    <Button
+                        Click="SaveCommands"
+                        ToolTipService.ToolTip="Save">
+                        <FontIcon Glyph="&#xE74E;"/>
+                    </Button>
+                    <Button
+                        Click="LaunchLocalFolder"
+                        ToolTipService.ToolTip="Open local folder">
+                        <FontIcon Glyph="&#xEC50;"/>
+                    </Button>
+                </StackPanel>
+                <!-- Commands -->
+                <Border
+                    Grid.Row="1"
+                    Margin="0,10,0,0"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{ThemeResource ControlElevationBorderBrush}">
+                    <cc:HeaderedTreeView
+                        x:Name="e_commands"
+                        Header="App commands"
+                        SelectionChanged="Commands_SelectionChanged"
+                        ItemsSource="{x:Bind m_commandViewModel.ItemsSource, Mode=OneWay}">
+                        <cc:HeaderedTreeView.ItemTemplate>
+                            <DataTemplate x:DataType="mo:CommandItem">
+                                <TreeViewItem
+                                    IsExpanded="True"
+                                    ItemsSource="{x:Bind Children, Mode=OneWay}">
+                                    <StackPanel
+                                        Spacing="10"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                        <co:CommandIcon
+                                            Source="{x:Bind Icon, Mode=OneWay}"/>
+                                        <TextBlock
+                                            Text="{x:Bind Title, Mode=OneWay}"/>
+                                    </StackPanel>
+                                </TreeViewItem>
+                            </DataTemplate>
+                        </cc:HeaderedTreeView.ItemTemplate>
+                    </cc:HeaderedTreeView>
+                </Border>
+                <!-- Horizontal Resizer -->
+                <cc:GridSplitter Grid.Row="2" Height="20">
+                    <cc:GridSplitter.RenderTransform>
+                        <TranslateTransform Y="-10.5"/>
+                    </cc:GridSplitter.RenderTransform>
+                </cc:GridSplitter>
+                <!-- Packages -->
+                <cc:HeaderedTreeView
+                    x:Name="e_packages"
+                    Grid.Row="3"
+                    SelectionMode="None"
+                    CanReorderItems="False"
+                    Header="Other packages"
+                    ItemsSource="{x:Bind m_packageViewModel.ItemsSource, Mode=OneWay}"
+                    ItemTemplateSelector="{StaticResource PackageDataTemplateSelector}"/>
+            </Grid>
+        </Border>
+
+        <!-- Vertical Resizer -->
+        <cc:GridSplitter Grid.Column="1" Width="20">
+            <cc:GridSplitter.RenderTransform>
+                <TranslateTransform X="-10.5"/>
+            </cc:GridSplitter.RenderTransform>
+        </cc:GridSplitter>
+
+        <!-- Command Configuration -->
+        <Pivot
+            x:Name="m_pivot"
+            SelectionChanged="Pivot_SelectionChanged"
+            Grid.Column="2">
+            <PivotItem Header="Command">
+                <ScrollViewer
+                    x:Name="e_commandTab"
+                    Margin="0,10,0,10"
+                    IsEnabled="False">
+                    <StackPanel
+                        Spacing="10">
+                        <!-- Menu item -->
+                        <StackPanel
+                            Spacing="10">
+                            <TextBlock Text="Menu item" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            <!-- Title -->
+                            <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                <Grid
+                                    ColumnSpacing="10"
+                                    ColumnDefinitions="Auto,100,*,Auto">
+                                    <FontIcon Glyph="&#xE932;"/>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center">
+                                        Title:
+                                    </TextBlock>
+                                    <TextBox
+                                        x:Name="e_commandTitle"
+                                        Grid.Column="2"
+                                        PlaceholderText="The title text of the menu item."/>
+                                    <Button
+                                        Grid.Column="3"
+                                        Click="Browser_NavigateTo"
+                                        Tag="https://learn.microsoft.com/windows/win32/api/shobjidl_core/nf-shobjidl_core-iexplorercommand-gettitle"
+                                        ToolTipService.ToolTip="Help">
+                                        <FontIcon Glyph="&#xE897;"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                            <!-- Icons -->
+                            <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                <Grid
+                                    RowSpacing="7"
+                                    ColumnSpacing="10"
+                                    ColumnDefinitions="Auto,100,*,Auto,Auto"
+                                    RowDefinitions="Auto,Auto">
+                                    <FontIcon Grid.RowSpan="2" Glyph="&#xEB9F;"/>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Grid.RowSpan="2"
+                                        VerticalAlignment="Center">
+                                        Icons:
+                                    </TextBlock>
+                                    <AutoSuggestBox
+                                        x:Name="e_commandLightIcon"
+                                        Grid.Column="2"
+                                        PlaceholderText="The icon for the light theme."
+                                        KeyDown="TextBox_KeyDown_SingleLine"
+                                        TextChanged="AutoSuggestBox_TextChanged_Path"
+                                        TextMemberPath="Path"
+                                        DisplayMemberPath="Name"/>
+                                    <AutoSuggestBox
+                                        x:Name="e_commandDarkIcon"
+                                        Grid.Column="2"
+                                        Grid.Row="1"
+                                        PlaceholderText="The icon for the dark theme."
+                                        KeyDown="TextBox_KeyDown_SingleLine"
+                                        TextChanged="AutoSuggestBox_TextChanged_Path"
+                                        TextMemberPath="Path"
+                                        DisplayMemberPath="Name"/>
+                                    <NumberBox
+                                        x:Name="e_commandLightIconIndex"
+                                        Grid.Column="3"
+                                        ToolTipService.ToolTip="Icon index"/>
+                                    <NumberBox
+                                        x:Name="e_commandDarkIconIndex"
+                                        Grid.Column="3"
+                                        Grid.Row="1"
+                                        ToolTipService.ToolTip="Icon index"/>
+                                    <Button
+                                        Grid.Column="4"
+                                        Tag="{x:Bind e_commandLightIcon}"
+                                        Click="Button_Click_PickFile"
+                                        ToolTipService.ToolTip="Pick a file">
+                                        <FontIcon Glyph="&#xE8E5;"/>
+                                    </Button>
+                                    <Button
+                                        Grid.Column="4"
+                                        Grid.Row="1"
+                                        Tag="{x:Bind e_commandDarkIcon}"
+                                        Click="Button_Click_PickFile"
+                                        ToolTipService.ToolTip="Pick a file">
+                                        <FontIcon Glyph="&#xE8E5;"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                            <!-- State -->
+                            <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                <Grid
+                                    ColumnSpacing="10"
+                                    ColumnDefinitions="Auto,100,*,Auto">
+                                    <FontIcon Glyph="&#xF19D;"/>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center">
+                                        State:
+                                    </TextBlock>
+                                    <ComboBox
+                                        x:Name="e_commandState"
+                                        Grid.Column="2"
+                                        HorizontalAlignment="Stretch">
+                                        <x:String>Enabled</x:String>
+                                        <x:String>Disabled</x:String>
+                                        <x:String>Hidden</x:String>
+                                    </ComboBox>
+                                    <Button
+                                        Grid.Column="3"
+                                        Click="Browser_NavigateTo"
+                                        Tag="https://learn.microsoft.com/windows/win32/api/shobjidl_core/nf-shobjidl_core-iexplorercommand-getstate"
+                                        ToolTipService.ToolTip="Help">
+                                        <FontIcon Glyph="&#xE897;"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                            <!-- Type (Flags) -->
+                            <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                <Grid
+                                    ColumnSpacing="10"
+                                    ColumnDefinitions="Auto,100,*,Auto">
+                                    <FontIcon Glyph="&#xE8BC;"/>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center">
+                                        Type:
+                                    </TextBlock>
+                                    <ComboBox
+                                        x:Name="e_commandFlags"
+                                        Grid.Column="2"
+                                        HorizontalAlignment="Stretch">
+                                        <x:String>Command</x:String>
+                                        <x:String>Subcommand</x:String>
+                                        <x:String>Separator</x:String>
+                                    </ComboBox>
+                                    <Button
+                                        Grid.Column="3"
+                                        Click="Browser_NavigateTo"
+                                        Tag="https://learn.microsoft.com/windows/win32/api/shobjidl_core/nf-shobjidl_core-iexplorercommand-getflags"
+                                        ToolTipService.ToolTip="Help">
+                                        <FontIcon Glyph="&#xE897;"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                        <!-- Command -->
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="Command" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            <!-- File -->
+                            <Expander
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch"
+                                Loaded="Expander_Loaded_Collapse"
+                                IsExpanded="True">
+                                <Expander.Header>
+                                    <Grid
+                                        ColumnSpacing="10"
+                                        ColumnDefinitions="Auto,100,*,Auto,Auto">
+                                        <FontIcon Glyph="&#xE7AC;"/>
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center">
+                                            File:
+                                        </TextBlock>
+                                        <AutoSuggestBox
+                                            x:Name="e_commandFile"
+                                            Grid.Column="2"
+                                            KeyDown="TextBox_KeyDown_SingleLine"
+                                            PlaceholderText="The file to execute."
+                                            TextChanged="AutoSuggestBox_TextChanged_Path"
+                                            TextMemberPath="Path"
+                                            DisplayMemberPath="Name"/>
+                                        <Button
+                                            Grid.Column="3"
+                                            Tag="{x:Bind e_commandFile}"
+                                            Click="Button_Click_PickFolder"
+                                            ToolTipService.ToolTip="Pick a folder">
+                                            <FontIcon Glyph="&#xE8DA;"/>
+                                        </Button>
+                                        <Button
+                                            Grid.Column="4"
+                                            Tag="{x:Bind e_commandFile}"
+                                            Click="Button_Click_PickFile"
+                                            ToolTipService.ToolTip="Pick a file">
+                                            <FontIcon Glyph="&#xE8E5;"/>
+                                        </Button>
+                                    </Grid>
+                                </Expander.Header>
+                                <Expander.Content>
+                                    <StackPanel>
+                                        <!-- Verb -->
+                                        <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                            <Grid
+                                                ColumnSpacing="10"
+                                                ColumnDefinitions="Auto,150,*,Auto">
+                                                <FontIcon Glyph="&#xECA5;"/>
+                                                <TextBlock
+                                                    Grid.Column="1"
+                                                    VerticalAlignment="Center">
+                                                    Verb:
+                                                </TextBlock>
+                                                <ComboBox
+                                                    x:Name="e_commandVerb"
+                                                    Grid.Column="2"
+                                                    HorizontalAlignment="Stretch"
+                                                    PlaceholderText="The action to be performed."
+                                                    IsEditable="True">
+                                                    <x:String>Open</x:String>
+                                                    <x:String>RunAs</x:String>
+                                                    <x:String>Edit</x:String>
+                                                    <x:String>Find</x:String>
+                                                    <x:String>Explore</x:String>
+                                                    <x:String>Print</x:String>
+                                                    <x:String>MsgBox</x:String>
+                                                </ComboBox>
+                                                <Button
+                                                    Grid.Column="3"
+                                                    Click="Browser_NavigateTo"
+                                                    Tag="https://learn.microsoft.com/windows/win32/api/shellapi/nf-shellapi-shellexecutew#:~:text=in%2C%20optional%5D%20lpOperation"
+                                                    ToolTipService.ToolTip="Help">
+                                                    <FontIcon Glyph="&#xE897;"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                        <!-- Show Window (Command) -->
+                                        <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                            <Grid
+                                                ColumnSpacing="10"
+                                                ColumnDefinitions="Auto,150,*,Auto">
+                                                <FontIcon Glyph="&#xE923;"/>
+                                                <TextBlock
+                                                    Grid.Column="1"
+                                                    VerticalAlignment="Center">
+                                                    Show Window:
+                                                </TextBlock>
+                                                <ComboBox
+                                                    x:Name="e_commandShowCmd"
+                                                    Grid.Column="2"
+                                                    HorizontalAlignment="Stretch">
+                                                    <x:String>Hide</x:String>
+                                                    <x:String>Normal</x:String>
+                                                    <x:String>Minimized</x:String>
+                                                    <x:String>Maximized</x:String>
+                                                </ComboBox>
+                                                <Button
+                                                    Grid.Column="3"
+                                                    Click="Browser_NavigateTo"
+                                                    Tag="https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-showwindow#:~:text=to%20the%20window.-,%5Bin%5D%20nCmdShow,-Type%3A%20int"
+                                                    ToolTipService.ToolTip="Help">
+                                                    <FontIcon Glyph="&#xE897;"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                        <!-- Working Directory -->
+                                        <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                            <Grid
+                                                ColumnSpacing="10"
+                                                ColumnDefinitions="Auto,150,*,Auto,Auto">
+                                                <FontIcon Glyph="&#xE923;"/>
+                                                <TextBlock
+                                                    Grid.Column="1"
+                                                    VerticalAlignment="Center">
+                                                    Working Directory:
+                                                </TextBlock>
+                                                <AutoSuggestBox
+                                                    x:Name="e_commandWorkDir"
+                                                    Grid.Column="2"
+                                                    KeyDown="TextBox_KeyDown_SingleLine"
+                                                    PlaceholderText="The default working directory."
+                                                    TextChanged="AutoSuggestBox_TextChanged_Path"
+                                                    TextMemberPath="Path"
+                                                    DisplayMemberPath="Name"/>
+                                                <Button
+                                                    Grid.Column="3"
+                                                    Tag="{x:Bind e_commandWorkDir}"
+                                                    Click="Button_Click_PickFolder"
+                                                    ToolTipService.ToolTip="Pick a folder">
+                                                    <FontIcon Glyph="&#xE8DA;"/>
+                                                </Button>
+                                                <Button
+                                                    Grid.Column="4"
+                                                    Click="Browser_NavigateTo"
+                                                    Tag="https://learn.microsoft.com/windows/win32/fileio/changing-the-current-directory"
+                                                    ToolTipService.ToolTip="Help">
+                                                    <FontIcon Glyph="&#xE897;"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </Expander.Content>
+                            </Expander>
+                            <!-- Arguments -->
+                            <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                <Grid
+                                    ColumnSpacing="10"
+                                    ColumnDefinitions="Auto,100,*,Auto">
+                                    <FontIcon Glyph="&#xE756;"/>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center">
+                                        Arguments:
+                                    </TextBlock>
+                                    <AutoSuggestBox
+                                        x:Name="e_commandArgs"
+                                        Grid.Column="2"
+                                        KeyDown="TextBox_KeyDown_SingleLine"
+                                        PlaceholderText="The file arguments."
+                                        TextChanged="AutoSuggestBox_TextChanged_Path"
+                                        TextMemberPath="Path"
+                                        DisplayMemberPath="Name"/>
+                                    <Button
+                                        Grid.Column="3"
+                                        Click="Browser_NavigateTo"
+                                        Tag="https://learn.microsoft.com/windows/win32/api/shellapi/nf-shellapi-shellexecutew#:~:text=%5Bin%2C%20optional%5D%20lpParameters"
+                                        ToolTipService.ToolTip="Help">
+                                        <FontIcon Glyph="&#xE897;"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                        <!-- Match -->
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="Match" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            <!-- Match Type -->
+                            <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                <Grid
+                                    ColumnSpacing="10"
+                                    ColumnDefinitions="Auto,100,*">
+                                    <FontIcon Glyph="&#xE762;"/>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center">
+                                        Match type:
+                                    </TextBlock>
+                                    <cc:WrapPanel
+                                        Grid.Column="2"
+                                        VerticalSpacing="8"
+                                        HorizontalSpacing="8"
+                                        Orientation="Horizontal">
+                                        <ToggleButton x:Name="e_commandTypeFile">
+                                            <StackPanel
+                                                Spacing="8"
+                                                Orientation="Horizontal">
+                                                <FontIcon Glyph="&#xF000;"/>
+                                                <TextBlock Text="File"/>
+                                            </StackPanel>
+                                        </ToggleButton>
+                                        <ToggleButton x:Name="e_commandTypeDrive">
+                                            <StackPanel
+                                                Spacing="8"
+                                                Orientation="Horizontal">
+                                                <FontIcon Glyph="&#xEDA2;"/>
+                                                <TextBlock Text="Drive"/>
+                                            </StackPanel>
+                                        </ToggleButton>
+                                        <ToggleButton x:Name="e_commandTypeDirectory">
+                                            <StackPanel
+                                               Spacing="8"
+                                               Orientation="Horizontal">
+                                                <FontIcon Glyph="&#xE838;"/>
+                                                <TextBlock Text="Directory"/>
+                                            </StackPanel>
+                                        </ToggleButton>
+                                        <ToggleButton x:Name="e_commandTypeUnknown">
+                                            <StackPanel
+                                               Spacing="8"
+                                               Orientation="Horizontal">
+                                                <FontIcon Glyph="&#xE9CE;"/>
+                                                <TextBlock Text="Unknown"/>
+                                            </StackPanel>
+                                        </ToggleButton>
+                                        <ToggleButton x:Name="e_commandTypeDesktop">
+                                            <StackPanel
+                                               Spacing="8"
+                                               Orientation="Horizontal">
+                                                <FontIcon Glyph="&#xE922;"/>
+                                                <TextBlock Text="Desktop"/>
+                                            </StackPanel>
+                                        </ToggleButton>
+                                        <ToggleButton x:Name="e_commandTypeBackground">
+                                            <StackPanel
+                                               Spacing="8"
+                                               Orientation="Horizontal">
+                                                <FontIcon Glyph="&#xEC50;"/>
+                                                <TextBlock Text="Background"/>
+                                            </StackPanel>
+                                        </ToggleButton>
+                                    </cc:WrapPanel>
+                                </Grid>
+                            </Border>
+                            <!-- Match Name -->
+                            <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                <Grid
+                                    ColumnSpacing="10"
+                                    ColumnDefinitions="Auto,100,*,*,Auto,Auto">
+                                    <FontIcon Glyph="&#xF6BA;"/>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Text="Match name:"/>
+                                    <TextBox
+                                        x:Name="e_commandRegexInclude"
+                                        Grid.Column="2"
+                                        PlaceholderText="Filename RegEx include."/>
+                                    <TextBox
+                                        x:Name="e_commandRegexExclude"
+                                        Grid.Column="3"
+                                        PlaceholderText="Filename RegEx exclude."/>
+                                    <Button
+                                        Grid.Column="4"
+                                        Click="Browser_NavigateTo"
+                                        Tag="https://regex101.com"
+                                        ToolTipService.ToolTip="Playground">
+                                        <FontIcon Glyph="&#xE7FC;"/>
+                                    </Button>
+                                    <Button
+                                        Grid.Column="5"
+                                        Click="Browser_NavigateTo"
+                                        Tag="https://regular-expressions.info"
+                                        ToolTipService.ToolTip="Help">
+                                        <FontIcon Glyph="&#xE897;"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                            <!-- Multi Mode -->
+                            <Expander
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch"
+                                Loaded="Expander_Loaded_Collapse"
+                                IsExpanded="True">
+                                <Expander.Header>
+                                    <Grid
+                                        ColumnSpacing="10"
+                                        ColumnDefinitions="Auto,100,*">
+                                        <FontIcon Glyph="&#xE8B3;"/>
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center">
+                                            Multi mode:
+                                        </TextBlock>
+                                        <ComboBox
+                                            x:Name="e_commandMultiMode"
+                                            Grid.Column="2"
+                                            HorizontalAlignment="Stretch">
+                                            <x:String>Off</x:String>
+                                            <x:String>Each</x:String>
+                                            <x:String>Join</x:String>
+                                        </ComboBox>
+                                    </Grid>
+                                </Expander.Header>
+                                <Expander.Content>
+                                    <!-- Arguments -->
+                                    <StackPanel>
+                                        <Border Style="{StaticResource ExpanderLikeBorderStyle}">
+                                            <Grid
+                                                ColumnSpacing="10"
+                                                ColumnDefinitions="Auto,100,*">
+                                                <FontIcon Glyph="&#xE756;"/>
+                                                <TextBlock
+                                                    Grid.Column="1"
+                                                    VerticalAlignment="Center"
+                                                    Text="Arguments:"/>
+                                                <AutoSuggestBox
+                                                    x:Name="e_commandMultiArgs"
+                                                    Grid.Column="2"
+                                                    KeyDown="TextBox_KeyDown_SingleLine"
+                                                    PlaceholderText="The arguments for each file."
+                                                    TextChanged="AutoSuggestBox_TextChanged_Path"
+                                                    TextMemberPath="Path"
+                                                    DisplayMemberPath="Name"/>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </Expander.Content>
+                            </Expander>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </PivotItem>
+            <PivotItem
+                x:Name="m_browserPivotItem"
+                Header="Browser">
+                <Grid
+                    Margin="0,10,0,0"
+                    RowSpacing="10"
+                    ColumnSpacing="10"
+                    RowDefinitions="Auto,*"
+                    ColumnDefinitions="Auto,*,Auto">
+                    <Button
+                        Tag="{x:Bind lo:App.s_repositoryUrl}"
+                        Click="Browser_NavigateTo"
+                        ToolTipService.ToolTip="Home">
+                        <FontIcon Glyph="&#xE80F;"/>
+                    </Button>
+                    <TextBox
+                        x:Name="m_webviewUri"
+                        Grid.Column="1"/>
+                    <Button
+                        Grid.Column="2"
+                        Click="Browser_Navigate"
+                        ToolTipService.ToolTip="Go">
+                        <FontIcon Glyph="&#xF6FA;"/>
+                    </Button>
+                    <WebView2
+                        x:Name="m_webview"
+                        Grid.Row="1"
+                        Grid.ColumnSpan="3"
+                        NavigationStarting="WebView_NavigationStarting"/>
+                </Grid>
+            </PivotItem>
+        </Pivot>
+    </Grid>
+</Page>

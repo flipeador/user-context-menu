@@ -1,0 +1,41 @@
+#pragma once
+
+template<typename T>
+concept C_LongLike =
+    std::is_integral_v<T> &&
+    sizeof(T) == sizeof(long);
+
+template<C_LongLike T>
+inline T SafeIncrement(volatile T& l)
+{
+    return (T)_InterlockedIncrement((volatile long*)&l);
+}
+
+template<C_LongLike T>
+inline T SafeDecrement(volatile T& l)
+{
+    return (T)_InterlockedDecrement((volatile long*)&l);
+}
+
+template <typename T>
+inline void SafeAssign(T*& rpv, T value)
+{
+    if (rpv != nullptr)
+        *rpv = value;
+}
+
+std::string MapStr(const std::wstring&);
+std::wstring MapStr(const std::string&);
+
+BOOL IsKeyDown(INT key);
+BOOL IsDarkThemeEnabled();
+String GetFullPathName(StrView str);
+String GetPathFromIDList(ITEMIDLIST* pIDL);
+String GetKnownFolderPath(const GUID& guid);
+String GetModuleFileName(HMODULE hModule);
+String GetEnvironmentVariable(StrView name);
+BOOL SetEnvironmentVariable(StrView name, StrView value);
+String ExpandEnvironmentStrings(StrView str);
+std::generator<String> ParseItems(StrView str, wchar_t sep);
+String FindPath(Path name, DWORD mask = 0, DWORD attr = 0);
+DWORD ShellExecute(HWND hWnd, StrView verb, StrView file, StrView args, StrView wdir, INT scmd);
