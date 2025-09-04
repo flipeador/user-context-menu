@@ -27,6 +27,8 @@ namespace UserContextMenuApp
         private void OnUnhandledException(object sender, UnhandledExceptionEventArgs args)
         {
             #if RELEASE
+            args.Handled = true;
+
             var notification = new AppNotificationBuilder()
                 .AddText("An exception was thrown.")
                 .AddText($"Type: {args.Exception.GetType()}")
@@ -35,8 +37,6 @@ namespace UserContextMenuApp
                 .BuildNotification();
 
             AppNotificationManager.Default.Show(notification);
-
-            args.Handled = true;
             #endif
         }
     }

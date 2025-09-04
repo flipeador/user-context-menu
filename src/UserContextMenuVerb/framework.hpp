@@ -19,9 +19,8 @@
 #include <shobjidl_core.h>
 
 #undef ShellExecute
-#undef GetFullPathName
 #undef OutputDebugString
-#undef GetModuleFileName
+#undef GetFileAttributes
 #undef GetEnvironmentVariable
 #undef SetEnvironmentVariable
 #undef ExpandEnvironmentStrings
@@ -31,9 +30,6 @@
 /***************************************************
  * STD LIBRARY
 ***************************************************/
-
-#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
-#include <codecvt>
 
 #include <new>
 #include <regex>
@@ -49,18 +45,19 @@
 #include <type_traits>
 #include <experimental/generator>
 
-namespace std {
-    template <typename T>
-    using generator = experimental::generator<T>;
-}
+template <typename T> using Vector = std::vector<T>;
+template <typename T> using Optional = std::optional<T>;
+template <typename T> using IList = std::initializer_list<T>;
+template <typename T1, typename T2> using Pair = std::pair<T1, T2>;
+template <typename T> using Generator = std::experimental::generator<T>;
 
 using String = std::wstring;
 using StrView = std::wstring_view;
 using Path = std::filesystem::path;
 
 #define NEW_NOTHROW(_) (new(std::nothrow) _)
-
-#define STR_EMPTY(_1, _2) (_1.empty() ? (_2) : (_1))
+#define STR_OPT_DATA(_) ((_) ? (_)->data() : nullptr)
+#define STR_IF_EMPTY(_1, _2) ((_1).empty() ? (_2) : (_1))
 #define STR_NULL_IF_EMPTY(_) ((_).empty() ? nullptr : (_).data())
 
 /***************************************************
@@ -70,18 +67,34 @@ using Path = std::filesystem::path;
 #include "lib/json.hpp"
 
 using Json = nlohmann::json;
-
 using JsonArr = Json::array_t;
 using JsonObj = Json::object_t;
-using JsonStr = Json::string_t;
+
+inline Optional<std::string_view> JsonGetStr(const Json& json)
+{
+    if (json.is_string())
+        return json.get_ref<const std::string&>();
+    return std::nullopt;
+}
+
+#define JSON_GET_STR(_) JsonGetStr(_).value_or("") // view
+#define JSON_GET_WSTR(_) MapStr(JSON_GET_STR(_))   // copy
 
 /***************************************************
  * PROJECT
 ***************************************************/
 
-#pragma warning(disable : 4456) // declaration of 'X' hides previous local declaration
+#define EXTERN extern "C"
+#define EXPORT EXTERN HRESULT
+
+#ifdef _DEBUG
+#define PACKAGE_NAME L"Flipeador.UserContextMenu.Dev_jtjzc90v003vw"
+#else
+#define PACKAGE_NAME L"Flipeador.UserContextMenu_jtjzc90v003vw"
+#endif
 
 using PPV = void**;
+using RIID = const IID&;
 
 // main.cpp
 extern ULONG g_count;

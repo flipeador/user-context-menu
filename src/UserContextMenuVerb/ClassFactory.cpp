@@ -1,4 +1,4 @@
-#include "framework.h"
+#include "framework.hpp"
 
 ClassFactory::ClassFactory()
 {
@@ -10,7 +10,7 @@ ClassFactory::~ClassFactory()
     SafeDecrement(g_count);
 }
 
-HRESULT ClassFactory::QueryInterface(const IID& iid, PPV ppv)
+HRESULT ClassFactory::QueryInterface(RIID iid, PPV ppv)
 {
     static const QITAB qit[] = {
         QITABENT(ClassFactory, IClassFactory),
@@ -19,7 +19,7 @@ HRESULT ClassFactory::QueryInterface(const IID& iid, PPV ppv)
     return QISearch(this, qit, iid, ppv);
 }
 
-HRESULT ClassFactory::CreateInstance(IUnknown* pnk, const IID& iid, PPV ppv)
+HRESULT ClassFactory::CreateInstance(IUnknown* pnk, RIID iid, PPV ppv)
 {
     COM_INIT_PPV_ARG(ppv);
     if (pnk) return CLASS_E_NOAGGREGATION;

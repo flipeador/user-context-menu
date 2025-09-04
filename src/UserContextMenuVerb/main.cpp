@@ -1,8 +1,6 @@
-#include "framework.h"
+#include "framework.hpp"
 
-static bool s_init = false;
-
-static void Initialize();
+static volatile bool g_init = false;
 
 ULONG g_count = 0;
 HMODULE g_hModule;
@@ -26,40 +24,58 @@ BOOL DllMain(HMODULE hModule, DWORD reason, PVOID)
 
 static void Initialize()
 {
-    if (s_init) return; s_init = true;
+    if (g_init) return; g_init = true;
 
-    auto installPath = Path(GetModuleFileName(g_hModule)).parent_path();
+    const auto desktopPath = GetKnownFolderPath(FOLDERID_Desktop);
+    const auto localAppDataPath = GetKnownFolderPath(FOLDERID_LocalAppData);
 
-    auto packageLocalData = std::format(
-        L"{}/Packages/{}/LocalState",
-        GetKnownFolderPath(FOLDERID_LocalAppData),
-        std::regex_replace(installPath.filename().wstring(), std::wregex(L"(_.*__)"), L"_")
-    );
+    const auto installPath = Path(GetModulePath(g_hModule)).parent_path().wstring();
+    const auto localDataPath = std::format(L"{}/Packages/{}/LocalState", localAppDataPath, PACKAGE_NAME);
 
-    SetEnvironmentVariable(L":LOCAL", packageLocalData);
-    SetEnvironmentVariable(L":INSTALL", installPath.wstring());
-    SetEnvironmentVariable(L":DESKTOP", GetKnownFolderPath(FOLDERID_Desktop));
+    SetEnvironmentVariable(L":LOCAL", localDataPath);
+    SetEnvironmentVariable(L":INSTALL", installPath);
+    SetEnvironmentVariable(L":DESKTOP", desktopPath);
 }
 
-STDAPI_(void) DllFindPath(const wchar_t* in, wchar_t* out)
+/***************************************************
+ * EXPORT
+***************************************************/
+
+EXTERN void DllFindPath(PCWSTR pv, PWSTR* ppv)
 {
     Initialize();
-    auto path = FindPath(ExpandEnvironmentStrings(in));
-    path.copy(out, path.size()); out[path.size()] = L'\0';
+    const auto path = FindPath(ExpandEnvironmentStrings(pv));
+    SHStrDupW(path.data(), ppv);
 }
 
-STDAPI_(HICON) DllExtractIcon(const wchar_t* path, int index)
+EXTERN INT DllPickIcon(HWND hWnd, INT index, PCWSTR pc, PWSTR* ppc)
+{
+    if (auto icon = PickIcon(hWnd, pc, index); icon)
+    {
+        *ppc = icon->first.release();
+        return icon->second;
+    }
+    return 0;
+}
+
+EXTERN HICON DllExtractIcon(PCWSTR path, INT index)
 {
     Initialize();
-    return ExtractIconW(g_hModule, path, index);
+    HICON hIcon = nullptr;
+    SHDefExtractIconW(path, index, 0, &hIcon, nullptr, 256);
+    return hIcon;
 }
 
-STDAPI DllCanUnloadNow()
+/***************************************************
+ * COM PRIVATE EXPORT
+***************************************************/
+
+EXPORT DllCanUnloadNow()
 {
     return g_count ? S_FALSE : S_OK;
 }
 
-STDAPI DllGetClassObject(const CLSID& clsid, const IID& iid, PPV ppv)
+EXPORT DllGetClassObject(RIID clsid, RIID iid, PPV ppv)
 {
     Initialize();
     COM_INIT_PPV_ARG(ppv);

@@ -1,20 +1,59 @@
-#include "../framework.h"
+#include "../framework.hpp"
 
-std::wstring MapStr(const std::string& str)
+/***************************************************
+ * STRING
+***************************************************/
+
+static size_t ToWideChar(const char* pc, size_t cs, wchar_t* pwc, size_t wcs)
 {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> c;
-    return c.from_bytes(str);
+    if (pwc == nullptr) wcs = 0;
+    if (cs > INT_MAX || wcs > INT_MAX) throw std::overflow_error("");
+    return MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, pc, (INT)cs, pwc, (INT)wcs);
 }
 
-std::string MapStr(const std::wstring& wstr)
+static size_t ToMultiByte(const wchar_t* pwc, size_t wcs, char* pc, size_t cs)
 {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> c;
-    return c.to_bytes(wstr);
+    if (pc == nullptr) cs = 0;
+    if (wcs > INT_MAX || cs > INT_MAX) throw std::overflow_error("");
+    return WideCharToMultiByte(CP_UTF8, 0, pwc, (INT)wcs, pc, (INT)cs, nullptr, nullptr);
 }
 
-BOOL IsKeyDown(INT key)
+std::string MapStr(std::wstring_view wstr)
 {
-    return GetAsyncKeyState(key) < 0;
+    std::string str;
+    if (!wstr.empty())
+        str.resize_and_overwrite(
+            ToMultiByte(wstr.data(), wstr.size(), nullptr, 0),
+            [&wstr](char* ptr, size_t count) -> size_t {
+                return ToMultiByte(wstr.data(), wstr.size(), ptr, count);
+            }
+        );
+    return str;
+}
+
+std::wstring MapStr(std::string_view str)
+{
+    std::wstring wstr;
+    if (!str.empty())
+        wstr.resize_and_overwrite(
+            ToWideChar(str.data(), str.size(), nullptr, 0),
+            [&str](wchar_t* ptr, size_t count) -> size_t {
+                return ToWideChar(str.data(), str.size(), ptr, count);
+            }
+        );
+    return wstr;
+}
+
+/***************************************************
+ * MISC
+***************************************************/
+
+BOOL IsKeyDown(IList<INT> keys)
+{
+    for (const auto& key : keys)
+        if (GetAsyncKeyState(key) < 0)
+            return TRUE;
+    return FALSE;
 }
 
 BOOL IsDarkThemeEnabled()
@@ -26,18 +65,7 @@ BOOL IsDarkThemeEnabled()
     return data == 0 ? TRUE : FALSE;
 }
 
-String GetFullPathName(StrView str)
-{
-    String path;
-    path.resize_and_overwrite(LONG_MAXPATH,
-        [&str](wchar_t* ptr, size_t count) -> size_t {
-            return GetFullPathNameW(str.data(), (DWORD)count, ptr, nullptr);
-        }
-    );
-    return path;
-}
-
-String GetPathFromIDList(ITEMIDLIST* pIDL)
+String GetShellItemPath(ITEMIDLIST* pIDL)
 {
     String str;
     if (pIDL != nullptr)
@@ -50,20 +78,20 @@ String GetPathFromIDList(ITEMIDLIST* pIDL)
     return str;
 }
 
-String GetKnownFolderPath(const GUID& guid)
+String GetKnownFolderPath(RIID iid)
 {
     wchar_t* pPath = nullptr;
-    auto hr = SHGetKnownFolderPath(guid, KF_FLAG_DEFAULT, nullptr, &pPath);
+    auto hr = SHGetKnownFolderPath(iid, KF_FLAG_DEFAULT, nullptr, &pPath);
     String str = SUCCEEDED(hr) ? pPath : L"";
     CoTaskMemFree(pPath);
     return str;
 }
 
-String GetModuleFileName(HMODULE hModule)
+String GetModulePath(HMODULE hModule)
 {
     String str;
     str.resize_and_overwrite(LONG_MAXPATH,
-        [&hModule](wchar_t* ptr, size_t count) -> size_t {
+        [&](wchar_t* ptr, size_t count) -> size_t {
             return GetModuleFileNameW(hModule, ptr, (DWORD)count);
         }
     );
@@ -75,16 +103,16 @@ String GetEnvironmentVariable(StrView name)
     String value;
     value.resize_and_overwrite(
         GetEnvironmentVariableW(name.data(), nullptr, 0),
-        [&name](wchar_t* ptr, size_t count) -> size_t {
+        [&](wchar_t* ptr, size_t count) -> size_t {
             return GetEnvironmentVariableW(name.data(), ptr, (DWORD)count);
         }
     );
     return value;
 }
 
-BOOL SetEnvironmentVariable(StrView name, StrView value)
+BOOL SetEnvironmentVariable(StrView name, const Optional<StrView>& value)
 {
-    return SetEnvironmentVariableW(name.data(), value.data());
+    return SetEnvironmentVariableW(name.data(), STR_OPT_DATA(value));
 }
 
 String ExpandEnvironmentStrings(StrView strv)
@@ -92,7 +120,7 @@ String ExpandEnvironmentStrings(StrView strv)
     String str;
     str.resize_and_overwrite(
         ExpandEnvironmentStringsW(strv.data(), nullptr, 0),
-        [&strv](wchar_t* ptr, size_t count) -> size_t {
+        [&](wchar_t* ptr, size_t count) -> size_t {
             count = ExpandEnvironmentStringsW(strv.data(), ptr, (DWORD)count);
             return count == 0 ? 0 : count - 1; // minus terminating null char
         }
@@ -100,7 +128,15 @@ String ExpandEnvironmentStrings(StrView strv)
     return str;
 }
 
-std::generator<String> ParseItems(StrView str, wchar_t sep)
+Optional<DWORD> GetFileAttributes(StrView path)
+{
+    auto attr = GetFileAttributesW(path.data());
+    if (attr == INVALID_FILE_ATTRIBUTES)
+        return std::nullopt;
+    return attr;
+}
+
+Generator<String> ParseItems(StrView str, WCHAR sep)
 {
     String item, temp;
     bool quote = false;
@@ -142,8 +178,8 @@ String FindPath(Path name, DWORD mask, DWORD attr)
     {
         if (const auto path = item / name; path.is_absolute())
         {
-            const auto attr2 = GetFileAttributesW(path.wstring().data());
-            if (attr2 != INVALID_FILE_ATTRIBUTES && BITMSK(attr2, mask, attr))
+            const auto attr2 = GetFileAttributes(path.wstring());
+            if (attr2 && BITMSK(*attr2, mask, attr))
                 return path.lexically_normal();
         }
     }
@@ -155,10 +191,22 @@ DWORD ShellExecute(HWND hWnd, StrView verb, StrView file, StrView args, StrView 
     if (verb == L"MsgBox") // for debugging purposes
     {
         const auto text = std::format(L"File: {}\nArgs: {}\nWDir: {}", file, args, wdir);
-        MessageBoxW(hWnd, text.data(), GetModuleFileName(g_hModule).data(), MB_OK);
+        MessageBoxW(hWnd, text.data(), PACKAGE_NAME, MB_OK);
         return NO_ERROR;
     }
-  
+
     return (DWORD)(INT_PTR)ShellExecuteW(hWnd, STR_NULL_IF_EMPTY(verb),
         file.data(), STR_NULL_IF_EMPTY(args), STR_NULL_IF_EMPTY(wdir), scmd);
+}
+
+/***************************************************
+ * DIALOGS
+***************************************************/
+
+Optional<Pair<ComStr, INT>> PickIcon(HWND hWnd, StrView path, INT index)
+{
+    auto str = ComAllocStr(LONG_MAXPATH, path);
+    if (PickIconDlg(hWnd, str.get(), LONG_MAXPATH, &index))
+        return Pair(std::move(str), index);
+    return std::nullopt;
 }

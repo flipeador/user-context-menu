@@ -17,7 +17,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
+    <ClInclude Include="framework.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ExplorerCommand.hpp">
@@ -69,5 +69,6 @@
     <None Include="source.def">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

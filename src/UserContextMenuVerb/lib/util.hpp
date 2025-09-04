@@ -24,18 +24,32 @@ inline void SafeAssign(T*& rpv, T value)
         *rpv = value;
 }
 
-std::string MapStr(const std::wstring&);
-std::wstring MapStr(const std::string&);
+/***************************************************
+ * STRING
+***************************************************/
 
-BOOL IsKeyDown(INT key);
+std::string MapStr(std::wstring_view wstr);
+std::wstring MapStr(std::string_view str);
+
+/***************************************************
+ * MISC
+***************************************************/
+
+BOOL IsKeyDown(IList<INT> keys);
 BOOL IsDarkThemeEnabled();
-String GetFullPathName(StrView str);
-String GetPathFromIDList(ITEMIDLIST* pIDL);
-String GetKnownFolderPath(const GUID& guid);
-String GetModuleFileName(HMODULE hModule);
+String GetShellItemPath(ITEMIDLIST* pIDL);
+String GetKnownFolderPath(RIID iid);
+String GetModulePath(HMODULE hModule);
 String GetEnvironmentVariable(StrView name);
-BOOL SetEnvironmentVariable(StrView name, StrView value);
+BOOL SetEnvironmentVariable(StrView name, const Optional<StrView>& value);
 String ExpandEnvironmentStrings(StrView str);
-std::generator<String> ParseItems(StrView str, wchar_t sep);
+Optional<DWORD> GetFileAttributes(StrView path);
+Generator<String> ParseItems(StrView str, WCHAR sep);
 String FindPath(Path name, DWORD mask = 0, DWORD attr = 0);
 DWORD ShellExecute(HWND hWnd, StrView verb, StrView file, StrView args, StrView wdir, INT scmd);
+
+/***************************************************
+ * DIALOGS
+***************************************************/
+
+Optional<Pair<ComStr, INT>> PickIcon(HWND hWnd, StrView path, INT index);

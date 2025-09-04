@@ -8,7 +8,7 @@ namespace UserContextMenuApp
 {
     public static partial class Util
     {
-        public static IEnumerable<T> Filter<T>(String query, params IEnumerable<T>[] args)
+        public static IEnumerable<T> Filter<T>(string query, params IEnumerable<T>[] args)
         {
             if (args == null) yield break;
 

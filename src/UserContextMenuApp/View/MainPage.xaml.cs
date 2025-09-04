@@ -1,7 +1,6 @@
 using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.Web.WebView2.Core;
 using UserContextMenuApp.Model;
@@ -21,7 +20,7 @@ namespace UserContextMenuApp.View
             LoadCommands(null, null);
         }
 
-        public void LoadCommands(Object sender, RoutedEventArgs args)
+        private void LoadCommands(Object sender, RoutedEventArgs args)
         {
             e_commands.SelectedItem = null;
             m_commandViewModel.Initialize();
@@ -32,13 +31,13 @@ namespace UserContextMenuApp.View
             m_packageViewModel.Initialize();
         }
 
-        public void AddChildCommand(Object sender, RoutedEventArgs args)
+        private void AddChildCommand(Object sender, RoutedEventArgs args)
         {
             if (e_commands.SelectedNode?.Content is CommandItem command)
                 command.Children.Add(new());
         }
 
-        public void RemoveSelectedCommand(Object sender, RoutedEventArgs args)
+        private void RemoveSelectedCommand(Object sender, RoutedEventArgs args)
         {
             if (e_commands.SelectedNode?.Content is CommandItem command)
             {
@@ -50,7 +49,7 @@ namespace UserContextMenuApp.View
             }
         }
 
-        public void SaveCommands(Object sender, RoutedEventArgs args)
+        private void SaveCommands(Object sender, RoutedEventArgs args)
         {
             if (e_commands.SelectedNode?.Content is CommandItem command)
             {
@@ -102,7 +101,7 @@ namespace UserContextMenuApp.View
             m_commandViewModel.Save();
         }
 
-        public void Commands_SelectionChanged(TreeView sender, TreeViewSelectionChangedEventArgs args)
+        private void Commands_SelectionChanged(TreeView sender, TreeViewSelectionChangedEventArgs args)
         {
             e_commandTab.IsEnabled = false;
 
@@ -164,55 +163,68 @@ namespace UserContextMenuApp.View
                 checkbox.IsChecked = !checkbox.IsChecked;
         }
 
-        public void LaunchLocalFolder(Object sender, RoutedEventArgs args)
+        private void LaunchLocalFolder(Object sender, RoutedEventArgs args)
         {
             _ = Launcher.LaunchFolderAsync(ApplicationData.Current.LocalFolder);
         }
 
-        public void Expander_Loaded_Collapse(Object sender, RoutedEventArgs args)
+        private void Expander_Loaded_Collapse(Object sender, RoutedEventArgs args)
         {
             var expander = sender as Expander;
             expander.IsExpanded = false;
         }
 
-        public void TextBox_KeyDown_SingleLine(Object sender, KeyRoutedEventArgs args)
+        private void TextBox_KeyDown_SingleLine(Object sender, KeyRoutedEventArgs args)
         {
             if (args.Key is VirtualKey.Space or VirtualKey.Enter)
                 args.Handled = true;
         }
 
-        public void AutoSuggestBox_TextChanged_Path(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
-        {
-            //if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-            //    sender.ItemsSource = Util.IO.Enumerate(sender.Text).Take(100);
-        }
+        //public void AutoSuggestBox_TextChanged_Path(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        //{
+        //    if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+        //        sender.ItemsSource = Util.IO.Enumerate(sender.Text).Take(100);
+        //}
 
-        public async void Button_Click_PickFile(Object sender, RoutedEventArgs args)
+        private async void Button_Click_PickFile(Object sender, RoutedEventArgs args)
         {
             var button = sender as Button;
-            var autoSuggestBox = button.Tag as AutoSuggestBox;
+            var textBox = button.Tag as TextBox;
             var file = await Util.IO.PickFile(button);
-            if (file != null) autoSuggestBox.Text = file.Path;
+            if (file != null) textBox.Text = file.Path;
         }
 
-        public async void Button_Click_PickFolder(Object sender, RoutedEventArgs args)
+        private async void Button_Click_PickFolder(Object sender, RoutedEventArgs args)
         {
             var button = sender as Button;
-            var autoSuggestBox = button.Tag as AutoSuggestBox;
+            var textBox = button.Tag as TextBox;
             var folder = await Util.IO.PickFolder(button);
-            if (folder != null) autoSuggestBox.Text = folder.Path;
+            if (folder != null) textBox.Text = folder.Path;
         }
 
-        public void Pivot_SelectionChanged(Object sender, SelectionChangedEventArgs args)
+        private void Button_Click_PickIcon(Object sender, RoutedEventArgs args)
+        {
+            var button = sender as Button;
+            var textBox = FindName(button.Tag as string) as TextBox;
+            var numberBox = FindName($"{button.Tag}Index") as NumberBox;
+            var path = UserContextMenuVerb.FindPath(textBox.Text);
+            var icon = Util.IO.PickIcon(button, path, (int)numberBox.Value);
+            if (icon != null)
+            {
+                textBox.Text = icon?.Item1;
+                numberBox.Value = (double)icon?.Item2;
+            }
+        }
+
+        private void Pivot_SelectionChanged(Object sender, SelectionChangedEventArgs args)
         {
             var selectedPivotItem = m_pivot.SelectedItem as PivotItem;
-
             if (selectedPivotItem == m_browserPivotItem)
-                if (String.IsNullOrEmpty(m_webviewUri.Text))
+                if (string.IsNullOrEmpty(m_webviewUri.Text))
                     m_webview.Source = new Uri(App.s_repositoryUrl);
         }
 
-        public void Browser_Navigate(Object sender, RoutedEventArgs args)
+        private void Browser_Navigate(Object sender, RoutedEventArgs args)
         {
             try
             {
@@ -221,7 +233,7 @@ namespace UserContextMenuApp.View
             catch { }
         }
 
-        public void Browser_NavigateTo(Object sender, RoutedEventArgs args)
+        private void Browser_NavigateTo(Object sender, RoutedEventArgs args)
         {
             m_pivot.SelectedItem = m_browserPivotItem;
             var element = sender as FrameworkElement;
@@ -230,7 +242,7 @@ namespace UserContextMenuApp.View
                 m_webview.Source = new Uri(uri);
         }
 
-        public void WebView_NavigationStarting(WebView2 sender, CoreWebView2NavigationStartingEventArgs args)
+        private void WebView_NavigationStarting(WebView2 sender, CoreWebView2NavigationStartingEventArgs args)
         {
             m_webviewUri.Text = args.Uri;
         }

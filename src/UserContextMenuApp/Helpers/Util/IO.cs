@@ -37,10 +37,10 @@ namespace UserContextMenuApp
                     else if (path.Contains('\\') || path.Contains('/'))
                     {
                         var parent = Path.GetDirectoryName(path);
-                        if (!String.IsNullOrEmpty(parent))
+                        if (!string.IsNullOrEmpty(parent))
                         {
                             var name = Path.GetFileName(path);
-                            if (!String.IsNullOrEmpty(name))
+                            if (!string.IsNullOrEmpty(name))
                             {
                                 var invalidNameChars = Path.GetInvalidFileNameChars();
                                 if (name.IndexOfAny(invalidNameChars) == -1) name += '*';
@@ -62,7 +62,7 @@ namespace UserContextMenuApp
                     }
                     catch { continue; }
 
-                    if (!String.IsNullOrEmpty(fullPath) && !String.IsNullOrEmpty(fileName))
+                    if (!string.IsNullOrEmpty(fullPath) && !string.IsNullOrEmpty(fileName))
                         yield return new EnumerateItem { Path = fullPath, Name = fileName };
                 }
             }
@@ -94,6 +94,15 @@ namespace UserContextMenuApp
                 var folder = await picker.PickSingleFolderAsync();
                 owner.IsEnabled = true;
                 return folder;
+            }
+
+            public static (string, int)? PickIcon(Control owner, string path, int index)
+            {
+                owner.IsEnabled = false;
+                var hWnd = Util.UI.GetWindowHandle(owner);
+                var icon = UserContextMenuVerb.PickIcon(hWnd, path, index);
+                owner.IsEnabled = true;
+                return icon;
             }
         }
     }

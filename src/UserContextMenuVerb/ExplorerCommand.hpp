@@ -44,7 +44,7 @@ public:
 
     // IObjectWithSite
     HRESULT SetSite(IUnknown*) override;
-    HRESULT GetSite(const IID&, PPV) override;
+    HRESULT GetSite(RIID, PPV) override;
 private:
     struct InitObject
     {
@@ -52,7 +52,7 @@ private:
         BOOL isDesktop;
         BOOL isDarkTheme;
         String background;
-        std::vector<std::pair<String, DWORD>> items;
+        Vector<Pair<String, DWORD>> items;
     };
 
     Json* m_pJson;

@@ -1,4 +1,4 @@
-#include "framework.h"
+#include "framework.hpp"
 
 EnumExplorerCommand::EnumExplorerCommand(ExplorerCommand* pExpCmd, Json* pJson)
     : m_pExpCmd(pExpCmd)
@@ -12,7 +12,7 @@ EnumExplorerCommand::~EnumExplorerCommand()
     SafeRelease(m_pExpCmd);
 }
 
-HRESULT EnumExplorerCommand::QueryInterface(const IID& iid, PPV ppv)
+HRESULT EnumExplorerCommand::QueryInterface(RIID iid, PPV ppv)
 {
     static const QITAB qit[] = {
         QITABENT(EnumExplorerCommand, IEnumExplorerCommand),

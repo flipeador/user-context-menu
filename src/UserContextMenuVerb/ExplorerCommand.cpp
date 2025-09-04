@@ -1,4 +1,4 @@
-#include "framework.h"
+#include "framework.hpp"
 
 #define IS_COMMAND (m_pJson && m_pJson->is_object())
 
@@ -7,7 +7,7 @@
     {                                  \
         command["state"] = ECS_HIDDEN; \
         return FALSE;                  \
-    }   
+    }
 
 static String FindPath2(StrView path, DWORD mask = 0, DWORD attr = 0)
 {
@@ -16,38 +16,38 @@ static String FindPath2(StrView path, DWORD mask = 0, DWORD attr = 0)
 
 static String ExpandCommandVars(Path path, StrView str)
 {
-    SetEnvironmentVariable(L":PARENT", String(path.parent_path()));
-    SetEnvironmentVariable(L":PATH", String(path));
-    SetEnvironmentVariable(L":NAME", String(path.filename()));
-    SetEnvironmentVariable(L":STEM", String(path.stem()));
-    SetEnvironmentVariable(L":EXT", String(path.extension()));
-    return ExpandEnvironmentStrings(STR_EMPTY(str, L"\"%:PATH%\""));
+    SetEnvironmentVariable(L":PARENT", path.parent_path().wstring());
+    SetEnvironmentVariable(L":PATH", path.wstring());
+    SetEnvironmentVariable(L":NAME", path.filename().wstring());
+    SetEnvironmentVariable(L":STEM", path.stem().wstring());
+    SetEnvironmentVariable(L":EXT", path.extension().wstring());
+    return ExpandEnvironmentStrings(STR_IF_EMPTY(str, L"\"%:PATH%\""));
 }
 
-static DWORD ExecCommand(HWND hWnd, StrView verb, StrView file, StrView args, StrView margs, StrView wdir, INT scmd)
+static void ExecCommand(HWND hWnd, StrView verb, StrView file, StrView cmdl, StrView args, StrView wdir, INT scmd)
 {
-    SetEnvironmentVariable(L":PATH", margs);
-    auto args2 = ExpandEnvironmentStrings(STR_EMPTY(args, L"%:PATH%"));
-    auto wdir2 = ExpandEnvironmentStrings(STR_EMPTY(wdir, L"%:BACKGROUND%"));
-    return ShellExecute(hWnd, verb, file, args2, wdir2, scmd);
+    SetEnvironmentVariable(L":PATH", args);
+    auto cmdl2 = ExpandEnvironmentStrings(STR_IF_EMPTY(cmdl, L"%:PATH%"));
+    auto wdir2 = ExpandEnvironmentStrings(STR_IF_EMPTY(wdir, L"%:BACKGROUND%"));
+    ShellExecute(hWnd, verb, file, cmdl2, wdir2, scmd);
 }
 
 static auto GetCommandIcon(const Json& cmd, size_t n)
 {
-    auto& path = cmd["icons"][n][0].get_ref<const JsonStr&>();
-    auto icon = FindPath2(MapStr(path), FILE_ATTRIBUTE_DIRECTORY);
+    auto path = JSON_GET_WSTR(cmd["icons"][n][0]);
+    auto icon = FindPath2(path, FILE_ATTRIBUTE_DIRECTORY);
     return std::format(L"\"{}\",{}", icon, (int)cmd["icons"][n][1]);
 }
 
 static auto GetCommandRegex(const Json& cmd, std::string_view key)
 {
     std::unique_ptr<std::wregex> re;
-    auto& regex = cmd["regex"][key].get_ref<const JsonStr&>();
+    auto regex = JSON_GET_WSTR(cmd["regex"][key]);
     if (!regex.empty())
     {
         try
         {
-            re = std::make_unique<std::wregex>(MapStr(regex));
+            re = std::make_unique<std::wregex>(regex);
         }
         catch (const std::regex_error&) { /* ignore invalid regex */ };
     }
@@ -84,7 +84,7 @@ ExplorerCommand::~ExplorerCommand()
     SafeDecrement(g_count);
 }
 
-HRESULT ExplorerCommand::QueryInterface(const IID& iid, PPV ppv)
+HRESULT ExplorerCommand::QueryInterface(RIID iid, PPV ppv)
 {
     static const QITAB qit[] = {
         QITABENT(ExplorerCommand, IExplorerCommand),
@@ -98,7 +98,7 @@ HRESULT ExplorerCommand::GetTitle(IShellItemArray*, PWSTR* ppv)
 {
     COM_INIT_PPV_ARG(ppv);
     if (!IS_COMMAND) return E_NOTIMPL;
-    auto& title = m_pJson->at("title").get_ref<JsonStr&>();
+    auto title = JSON_GET_STR(m_pJson->at("title"));
     return SHStrDupA(title.data(), ppv);
 }
 
@@ -119,7 +119,7 @@ HRESULT ExplorerCommand::GetToolTip(IShellItemArray*, PWSTR* ppv)
 
 HRESULT ExplorerCommand::GetCanonicalName(GUID* pGuid)
 {
-    COM_SET_PPV_ARG(pGuid, __uuidof(this));
+    COM_SET_ARG(pGuid, __uuidof(this));
     return S_OK;
 }
 
@@ -137,54 +137,57 @@ HRESULT ExplorerCommand::GetState(IShellItemArray* pItems, BOOL, EXPCMDSTATE* pS
 
 HRESULT ExplorerCommand::Invoke(IShellItemArray*, IBindCtx*)
 {
-    auto& cmd = *m_pJson;
-    auto& ctx = *GetRoot()->m_ctx;
+    const auto& cmd = *m_pJson;
+    const auto& ctx = *GetRoot()->m_ctx;
 
     HWND hWnd = nullptr;
     IUnknown_GetWindow(m_pSite, &hWnd);
 
-    String verb = L"runas"; // Run as Administrator.
-    auto elevated = IsKeyDown(VK_CONTROL) && IsKeyDown(VK_SHIFT);
-    if (!elevated) verb = MapStr(cmd["verb"].get_ref<JsonStr&>());
+    String verb = L"runas"; // elevated
+    if (!IsKeyDown({ VK_CONTROL, VK_SHIFT }))
+        verb = JSON_GET_WSTR(cmd["verb"]);
 
     INT scmd = cmd["scmd"];
-    auto file = MapStr(cmd["file"].get_ref<JsonStr&>());
-    auto args = MapStr(cmd["args"].get_ref<JsonStr&>());
-    auto wdir = MapStr(cmd["wdir"].get_ref<JsonStr&>());
-    auto& multiMode = cmd["multi"]["mode"].get_ref<JsonStr&>();
+    auto file = JSON_GET_WSTR(cmd["file"]);
+    auto cmdl = JSON_GET_WSTR(cmd["args"]);
+    auto wdir = JSON_GET_WSTR(cmd["wdir"]);
+    auto mode = JSON_GET_STR(cmd["multi"]["mode"]);
 
     SetEnvironmentVariable(L":BACKGROUND", ctx.background);
 
     file = FindPath2(file);
 
-    if (multiMode == "Off")
+    if (mode == "Off")
     {
         const auto& path = ctx.items.empty() ? ctx.background : ctx.items[0].first;
-        ExecCommand(hWnd, verb, file, L"", ExpandCommandVars(path, args), wdir, scmd);
+        ExecCommand(hWnd, verb, file, L"", ExpandCommandVars(path, cmdl), wdir, scmd);
     }
-    else if (multiMode == "Each" || multiMode == "Join")
+    else if (mode == "Each" || mode == "Join")
     {
-        auto multiArgs = MapStr(cmd["multi"]["args"].get_ref<JsonStr&>());
+        auto args = JSON_GET_WSTR(cmd["multi"]["args"]);
 
         if (ctx.items.empty())
         {
-            const auto margs = ExpandCommandVars(ctx.background, multiArgs);
-            ExecCommand(hWnd, verb, file, args, margs, wdir, scmd);
+            const auto args2 = ExpandCommandVars(ctx.background, args);
+            ExecCommand(hWnd, verb, file, cmdl, args2, wdir, scmd);
         }
-        else if (multiMode == "Each")
+        else if (mode == "Each")
         {
             for (const auto& [item, attr] : ctx.items)
             {
-                const auto margs = ExpandCommandVars(item, multiArgs);
-                ExecCommand(hWnd, verb, file, args, margs, wdir, scmd);
+                const auto args2 = ExpandCommandVars(item, args);
+                ExecCommand(hWnd, verb, file, cmdl, args2, wdir, scmd);
             }
         }
-        else if (multiMode == "Join")
+        else if (mode == "Join")
         {
-            String margs;
+            if (wdir.empty() && args.empty())
+                args = L"\"%:NAME%\"";
+
+            String args2;
             for (const auto& [item, attr] : ctx.items)
-                margs += ExpandCommandVars(item, multiArgs) + L" ";
-            ExecCommand(hWnd, verb, file, args, margs, wdir, scmd);
+                args2 += ExpandCommandVars(item, args) + L" ";
+            ExecCommand(hWnd, verb, file, cmdl, args2, wdir, scmd);
         }
     }
 
@@ -218,7 +221,7 @@ HRESULT ExplorerCommand::SetSite(IUnknown* pSite)
     return S_OK;
 }
 
-HRESULT ExplorerCommand::GetSite(const IID& iid, PPV ppv)
+HRESULT ExplorerCommand::GetSite(RIID iid, PPV ppv)
 {
     COM_INIT_PPV_ARG(ppv);
     if (m_pSite == nullptr) return E_FAIL;
@@ -257,8 +260,8 @@ BOOL ExplorerCommand::ProcessCommand(Json& command)
     // File | Drive | Directory
     else
     {
-        auto& multiMode = command["multi"]["mode"].get_ref<JsonStr&>();
-        RETURN_HIDDEN_IF(multiMode == "Off" && m_ctx->items.size() > 1);
+        auto mode = JSON_GET_STR(command["multi"]["mode"]);
+        RETURN_HIDDEN_IF(mode == "Off" && m_ctx->items.size() > 1);
 
         auto regexInclude = GetCommandRegex(command, "include");
         auto regexExclude = GetCommandRegex(command, "exclude");
@@ -317,9 +320,9 @@ HRESULT ExplorerCommand::Initialize(IShellItemArray* pItems)
             // There is no background in locations like `This PC`.
             ITEMIDLIST* pIDL = nullptr;
             pPersistFolder2->GetCurFolder(&pIDL);
-            m_ctx->background = GetPathFromIDList(pIDL);
+            m_ctx->background = GetShellItemPath(pIDL);
             CoTaskMemFree(pIDL);
-  
+
             pPersistFolder2->Release();
         }
         pFolderView->Release();
@@ -330,24 +333,24 @@ HRESULT ExplorerCommand::Initialize(IShellItemArray* pItems)
     {
         DWORD index = 0;
         IShellItem* pItem;
+
         // Iterate through all items and add them to the vector.
         while (SUCCEEDED(pItems->GetItemAt(index++, &pItem)))
         {
             PWSTR pName;
             if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pName)))
             {
-                //SFGAOF attr;
-                //pItem->GetAttributes(SFGAO_FOLDER, &attr);
+                // Use `GetFileAttributes` instead of `IShellItem::GetAttributes`.
+                // ZIP compressed files can be flagged with `SFGAO_FOLDER`.
+                if (const auto attr = GetFileAttributes(pName); attr)
+                    m_ctx->items.push_back({ pName, *attr });
 
-                // Use "GetFileAttributesW" instead of "GetAttributes".
-                // ZIP compressed files can be flagged with "SFGAO_FOLDER".
-                auto attr = GetFileAttributesW(pName);
-
-                m_ctx->items.push_back({ pName, attr });
                 CoTaskMemFree(pName);
             }
+
             pItem->Release();
         }
+
         // Check if there are any items that could not be retrieved.
         if (FAILED(pItems->GetCount(&index)) || index != m_ctx->items.size())
             return S_FALSE;

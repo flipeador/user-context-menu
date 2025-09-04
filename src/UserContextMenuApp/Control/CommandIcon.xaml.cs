@@ -26,13 +26,21 @@ namespace UserContextMenuApp.Controls
                 bitmapImage.UriSource = new Uri(uri);
             else if (source is IRandomAccessStream stream)
                 bitmapImage.SetSource(stream);
-            Content = new Image { Source = bitmapImage, Width = 20, Height = 20 };
+            var image = new Image { Width = 20, Height = 20 };
+            image.ImageFailed += OnImageFailed;
+            image.Source = bitmapImage;
+            Content = image;
         }
 
         public string Source
         {
             get => (string)GetValue(SourceProperty);
             set => SetValue(SourceProperty, value);
+        }
+
+        private void OnImageFailed(object sender, ExceptionRoutedEventArgs args)
+        {
+            Content = new FontIcon { Glyph = "\xE8A4", Width = 20, Height = 20 };
         }
 
         private static void OnSourceChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
@@ -48,23 +56,22 @@ namespace UserContextMenuApp.Controls
                 if (hIcon != nint.Zero)
                 {
                     using var icon = System.Drawing.Icon.FromHandle(hIcon);
-                    var stream = new MemoryStream();
+                    using var stream = new MemoryStream();
                     using var bitmap = icon.ToBitmap();
                     bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
                     stream.Position = 0;
                     using var stream2 = stream.AsRandomAccessStream();
                     self.SetImage(stream2);
-                    return;
                 }
-                else if (path.Contains('.'))
+                else
                 {
                     self.SetImage(path);
-                    return;
                 }
             }
-            catch { }
-
-            self.Content = new FontIcon { Glyph = "\xE8A4", Width = 20, Height = 20 };
+            catch
+            {
+                self.OnImageFailed(null, null);
+            }
         }
     }
 }

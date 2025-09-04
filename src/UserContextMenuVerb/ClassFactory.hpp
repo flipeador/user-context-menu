@@ -10,7 +10,7 @@ public:
     COM_DEFINE_IUNKNOWN_METHODS;
 
     // IClassFactory
-    HRESULT CreateInstance(IUnknown*, const IID&, PPV) override;
+    HRESULT CreateInstance(IUnknown*, RIID, PPV) override;
     HRESULT LockServer(BOOL) override;
 private:
     // IUnknown

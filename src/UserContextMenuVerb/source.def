@@ -1,6 +1,7 @@
 LIBRARY
 EXPORTS
     DllFindPath
+    DllPickIcon
     DllExtractIcon
-    DllCanUnloadNow      PRIVATE
-    DllGetClassObject    PRIVATE
+    DllCanUnloadNow   PRIVATE
+    DllGetClassObject PRIVATE

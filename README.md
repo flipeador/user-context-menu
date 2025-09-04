@@ -4,8 +4,8 @@ Create custom commands in the [modern context menu][contextmenu] and enable/disa
 
 <p align="center">
   <img alt="Preview" src="assets/preview.png"> <br/> <br/>
-  <a href="https://github.com/flipeador/user-context-menu/releases/download/v1.0.0/package.x64.7z">
-    <img src="https://img.shields.io/badge/Releases-Direct download (v1.0.0)-orange.svg?style=for-the-badge"/>
+  <a href="https://github.com/flipeador/user-context-menu/releases/download/v1.0.1/package.x64.7z">
+    <img src="https://img.shields.io/badge/Releases-Direct download (v1.0.1)-orange.svg?style=for-the-badge"/>
   </a>
 </p>
 
@@ -28,7 +28,9 @@ Create custom commands in the [modern context menu][contextmenu] and enable/disa
 > After installation:
 > - You may need to restart Windows Explorer for the commands to appear. [^1]
 >
-> Make sure you have the [.NET 9 runtimes][netrt] installed if you get an error.
+> If you get an error, make sure you have the following installed:
+> - [Microsoft .NET 9 runtimes][netrt].
+> - [Microsoft Visual C++ Redistributable][mvcpp].
 
 > [!TIP]
 > You can easily check the latest version from within the application:
@@ -89,9 +91,9 @@ To display the context menu in these locations, enable `Unknown` in **Match type
 | `%:DESKTOP%` | The desktop folder path for the current user. |
 | `%:BACKGROUND%` | The location where the menu is invoked. |
 
-#### Arguments
+#### Command line / Arguments
 
-The following variables are only available in the arguments.
+The following variables are only available in **Command line** and **Arguments**:
 
 | Variable | Description |
 | --- | --- |
@@ -100,6 +102,15 @@ The following variables are only available in the arguments.
 | [`%:NAME%`][name] | The name of the file or directory. |
 | [`%:STEM%`][stem] | The filename without the final extension. |
 | [`%:EXT%`][ext] | The file extension path component. |
+
+The following are the default values for **Command line** and **Arguments**:
+
+| Command line | Arguments | W. Directory | Multi mode |
+| --- | --- | --- | --- |
+| `"%:PATH%"` | N/A | ANY | `Off` |
+| `%:PATH%` | `"%:PATH%"` | ANY | `Each` |
+| `%:PATH%` | `"%:NAME%"` | EMPTY | `Join` |
+| `%:PATH%` | `"%:PATH%"` | NOT EMPTY | `Join` |
 
 </details>
 
@@ -141,33 +152,88 @@ Specifies the behavior when multiple items are selected.
 
 | Mode | Description |
 | --- | --- |
-| `Off` | Hide the context menu if `>1` items are selected. |
+| `Off` | Hide the command if `>1` items are selected. |
 | `Each` | Execute the file individually for each selected item. |
 | `Join` | Execute the file once; items are concatenated with a space. |
 
-The arguments in this section are useful when using the `Join` mode.
+The arguments are useful when using the `Join` mode.
 
 For example, if you need to prefix the items with `-f`:
 
 > File: `cmd.exe` \
-> Arguments: `/k echo %:PATH%` \
-> Multi mode arguments: `-f "%:PATH%"`
+> Command line: `/k echo %:PATH%` \
+> Arguments: `-f "%:NAME%"`
 >
 > Result for two items: `-f "x.txt" -f "y.txt"`
 
-If `%:PATH%` is surrounded with quotes in the main arguments, the result will be:
+If `%:PATH%` is enclosed in double quotation marks in the command line, the result will be:
 
 ```
 "-f "x.txt" -f "y.txt""
 ```
 
-Therefore, avoid quotation marks in the main arguments when using `Each` and `Join` modes .
+Therefore, avoid double quotation marks with `%:PATH%` in the command line when using `Each` and `Join` modes .
 
 </details>
 
 > [!CAUTION]
 > Do not modify the `commands.json` file in the local folder with a text editor; \
 > invalid formatting or incorrect values may cause problems with Windows Explorer.
+
+## Examples
+
+<details>
+<summary><h3>Create Hard Link</h3></summary>
+
+| Name | Value |
+| --- | --- |
+| Icon | `imageres.dll` `-5322` |
+| File | `%ComSpec%` |
+| Show Window | `Hide` |
+| Command line | `/c mklink /h "%:NAME%.hlnk" "%:NAME%"` |
+| Match type | `File` |
+| Match name | `⠀` `\.(hlnk)$` |
+
+</details>
+
+<details>
+<summary><h3>Create Symbolic Link (File)</h3></summary>
+
+| Name | Value |
+| --- | --- |
+| Icon | `shell32.dll` `-133` |
+| File | `%ComSpec%` |
+| Show Window | `Hide` |
+| Command line | `/c mklink "%:NAME%.slnk" "%:NAME%"` |
+| Match type | `File` |
+| Match name | `⠀` `\.(slnk)$` |
+
+</details>
+
+<details>
+<summary><h3>Create Symbolic Link (Folder)</h3></summary>
+
+| Name | Value |
+| --- | --- |
+| Icon | `imageres.dll` `-5382` |
+| File | `%ComSpec%` |
+| Show Window | `Hide` |
+| Command line | `/c mklink /d "%:NAME%.slnk" "%:NAME%"` |
+| Match type | `Directory` |
+| Match name | `⠀` `\.(slnk)$` |
+
+</details>
+
+<details>
+<summary><h3>Scan with Windows Defender</h3></summary>
+
+| Name | Value |
+| --- | --- |
+| File | `%ComSpec%` |
+| Command line | `/k call "%ProgramFiles%\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File "%:PATH%" -DisableRemediation` |
+| Match type | `File` `Directory` |
+
+</details>
 
 ## Build
 
@@ -198,7 +264,8 @@ Select the **Release** configuration, right click the `UserContextMenuApp` proje
 <!-- Reference Links -->
 [vs]: https://visualstudio.microsoft.com
 [net9]: https://dotnet.microsoft.com/download/dotnet/9.0
-[netrt]: https://learn.microsoft.com/dotnet/core/install/windows#install-the-runtime
+[netrt]: https://learn.microsoft.com/en-us/dotnet/core/install/windows#install-the-runtime
+[mvcpp]: https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist#latest-microsoft-visual-c-redistributable-version
 [envvars]: https://github.com/flipeador/environment-variables-editor
 [releases]: https://github.com/flipeador/user-context-menu/releases
 

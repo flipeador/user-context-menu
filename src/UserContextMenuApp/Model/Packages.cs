@@ -109,7 +109,7 @@ namespace UserContextMenuApp.Model
                             {
                                 if (clsidKey.GetValue("DllPath") is string dllPath)
                                 {
-                                    if (!String.IsNullOrEmpty(dllPath))
+                                    if (!string.IsNullOrEmpty(dllPath))
                                     {
                                         bool enabled = dllPath.EndsWith(".dll");
                                         if (enabled || dllPath.EndsWith(".bak"))
