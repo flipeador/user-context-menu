@@ -23,7 +23,9 @@ HRESULT ClassFactory::CreateInstance(IUnknown* pnk, RIID iid, PPV ppv)
 {
     COM_INIT_PPV_ARG(ppv);
     if (pnk) return CLASS_E_NOAGGREGATION;
-    return ComCreateInterface<ExplorerCommand>(iid, ppv);
+    COM_CREATE_INSTANCE(IContextMenu, ContextMenu);
+    COM_CREATE_INSTANCE(IExplorerCommand, ExplorerCommand);
+    return E_NOINTERFACE;
 }
 
 HRESULT ClassFactory::LockServer(BOOL lock)

@@ -4,26 +4,20 @@ namespace UserContextMenuApp
 {
     public partial class UserContextMenuVerb
     {
-        private static readonly nint s_module =
-            NativeLibrary.Load($"{App.s_installFolderPath}/UserContextMenuVerb.dll");
+        private static readonly nint s_module;
 
-        private static readonly DllFindPath s_dllFindPath = GetDelegate<DllFindPath>("DllFindPath");
-        private static readonly DllPickIcon s_dllPickIcon = GetDelegate<DllPickIcon>("DllPickIcon");
-        private static readonly DllExtractIcon s_dllExtractIcon = GetDelegate<DllExtractIcon>("DllExtractIcon");
+        private static readonly DllFindPath s_dllFindPath;
+        private static readonly DllPickIcon s_dllPickIcon;
+        private static readonly DllExtractIcon s_dllExtractIcon;
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        private delegate void DllFindPath(string a, out string b);
-
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        private delegate int DllPickIcon(nint a, int b, string c, out string d);
-
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        private delegate nint DllExtractIcon(string a, int b);
-
-        private static T GetDelegate<T>(string name)
+        static UserContextMenuVerb()
         {
-            var ptr = NativeLibrary.GetExport(s_module, name);
-            return Marshal.GetDelegateForFunctionPointer<T>(ptr);
+            s_module = NativeLibrary.Load($"{App.s_installFolderPath}/UserContextMenuVerb.dll");
+
+            GetDelegate<DllInit>("DllInit")();
+            s_dllFindPath = GetDelegate<DllFindPath>("DllFindPath");
+            s_dllPickIcon = GetDelegate<DllPickIcon>("DllPickIcon");
+            s_dllExtractIcon = GetDelegate<DllExtractIcon>("DllExtractIcon");
         }
 
         public static string FindPath(string path)
@@ -42,5 +36,23 @@ namespace UserContextMenuApp
         {
             return s_dllExtractIcon(path, index);
         }
+
+        private static T GetDelegate<T>(string name)
+        {
+            var ptr = NativeLibrary.GetExport(s_module, name);
+            return Marshal.GetDelegateForFunctionPointer<T>(ptr);
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate void DllInit();
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private delegate void DllFindPath(string a, out string b);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private delegate int DllPickIcon(nint a, int b, string c, out string d);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private delegate nint DllExtractIcon(string a, int b);
     }
 }

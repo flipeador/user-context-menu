@@ -9,60 +9,90 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Header Files\lib">
+    <Filter Include="Header Files\ContextMenu">
+      <UniqueIdentifier>{454f731c-170a-475c-bd4f-6da300621878}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ContextMenu\Modern">
+      <UniqueIdentifier>{44b81c06-33f0-4b6b-b6ea-e0e01354b9af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ContextMenu\Classic">
+      <UniqueIdentifier>{71a409f3-f1ac-4e8a-aae6-ba021ed27422}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ContextMenu">
+      <UniqueIdentifier>{8129ec48-4bd5-4d85-a59b-7724d7da7801}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Lib">
+      <UniqueIdentifier>{81b1ab17-6c08-4b3a-9e78-2c832d1421b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Lib">
       <UniqueIdentifier>{4c5ebc98-558e-4e7c-8611-9703c2c85fec}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\lib">
-      <UniqueIdentifier>{81b1ab17-6c08-4b3a-9e78-2c832d1421b8}</UniqueIdentifier>
+    <Filter Include="Source Files\ContextMenu\Modern">
+      <UniqueIdentifier>{ac7c4547-4d50-44fb-8628-edae6c590954}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ContextMenu\Classic">
+      <UniqueIdentifier>{bd18cf91-4a59-4693-be06-c12c35a08ce4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ExplorerCommand.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ClassFactory.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EnumExplorerCommand.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lib\json.hpp">
-      <Filter>Header Files\lib</Filter>
+      <Filter>Header Files\Lib</Filter>
     </ClInclude>
     <ClInclude Include="Package.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\cef.hpp">
-      <Filter>Header Files\lib</Filter>
+      <Filter>Header Files\Lib</Filter>
     </ClInclude>
     <ClInclude Include="lib\util.hpp">
-      <Filter>Header Files\lib</Filter>
+      <Filter>Header Files\Lib</Filter>
     </ClInclude>
     <ClInclude Include="lib\com.hpp">
-      <Filter>Header Files\lib</Filter>
+      <Filter>Header Files\Lib</Filter>
+    </ClInclude>
+    <ClInclude Include="ExplorerCommand.hpp">
+      <Filter>Header Files\ContextMenu\Modern</Filter>
+    </ClInclude>
+    <ClInclude Include="EnumExplorerCommand.hpp">
+      <Filter>Header Files\ContextMenu\Modern</Filter>
+    </ClInclude>
+    <ClInclude Include="ContextMenu.hpp">
+      <Filter>Header Files\ContextMenu\Classic</Filter>
+    </ClInclude>
+    <ClInclude Include="Command.hpp">
+      <Filter>Header Files\ContextMenu</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ExplorerCommand.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ClassFactory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EnumExplorerCommand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Package.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib\util.cpp">
-      <Filter>Source Files\lib</Filter>
+      <Filter>Source Files\Lib</Filter>
+    </ClCompile>
+    <ClCompile Include="EnumExplorerCommand.cpp">
+      <Filter>Source Files\ContextMenu\Modern</Filter>
+    </ClCompile>
+    <ClCompile Include="ExplorerCommand.cpp">
+      <Filter>Source Files\ContextMenu\Modern</Filter>
+    </ClCompile>
+    <ClCompile Include="ContextMenu.cpp">
+      <Filter>Source Files\ContextMenu\Classic</Filter>
+    </ClCompile>
+    <ClCompile Include="Command.cpp">
+      <Filter>Source Files\ContextMenu</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -70,5 +100,8 @@
       <Filter>Source Files</Filter>
     </None>
     <None Include="cpp.hint" />
+    <None Include="ContextMenu.bak">
+      <Filter>Source Files\ContextMenu\Classic</Filter>
+    </None>
   </ItemGroup>
 </Project>

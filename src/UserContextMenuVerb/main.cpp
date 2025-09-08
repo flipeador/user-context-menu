@@ -1,9 +1,8 @@
 #include "framework.hpp"
 
-static volatile bool g_init = false;
-
 ULONG g_count = 0;
 HMODULE g_hModule;
+DllInitObject* g_pInitObj = nullptr;
 
 BOOL DllMain(HMODULE hModule, DWORD reason, PVOID)
 {
@@ -17,14 +16,21 @@ BOOL DllMain(HMODULE hModule, DWORD reason, PVOID)
         g_hModule = hModule;
         break;
     case DLL_PROCESS_DETACH:
+        delete g_pInitObj;
         break;
     }
     return TRUE;
 }
 
-static void Initialize()
+/***************************************************
+ * EXPORT
+***************************************************/
+
+EXTERN void DllInit()
 {
-    if (g_init) return; g_init = true;
+    if (g_pInitObj) return;
+
+    g_pInitObj = new DllInitObject { .isDarkTheme = IsDarkThemeEnabled() };
 
     const auto desktopPath = GetKnownFolderPath(FOLDERID_Desktop);
     const auto localAppDataPath = GetKnownFolderPath(FOLDERID_LocalAppData);
@@ -37,37 +43,30 @@ static void Initialize()
     SetEnvironmentVariable(L":DESKTOP", desktopPath);
 }
 
-/***************************************************
- * EXPORT
-***************************************************/
-
-EXTERN void DllFindPath(PCWSTR pv, PWSTR* ppv)
+EXTERN void DllFindPath(PCWSTR pwc, PWSTR* ppwc)
 {
-    Initialize();
-    const auto path = FindPath(ExpandEnvironmentStrings(pv));
-    SHStrDupW(path.data(), ppv);
+    SHStrDupW(FindFilePath(pwc).data(), ppwc);
 }
 
-EXTERN INT DllPickIcon(HWND hWnd, INT index, PCWSTR pc, PWSTR* ppc)
+EXTERN INT DllPickIcon(HWND hWnd, INT index, PCWSTR pwc, PWSTR* ppwc)
 {
-    if (auto icon = PickIcon(hWnd, pc, index); icon)
+    if (auto icon = PickIcon(hWnd, pwc, index))
     {
-        *ppc = icon->first.release();
-        return icon->second;
+        *ppwc = icon->first.release();
+        return icon->second; // index
     }
     return 0;
 }
 
 EXTERN HICON DllExtractIcon(PCWSTR path, INT index)
 {
-    Initialize();
     HICON hIcon = nullptr;
     SHDefExtractIconW(path, index, 0, &hIcon, nullptr, 256);
     return hIcon;
 }
 
 /***************************************************
- * COM PRIVATE EXPORT
+ * COM SERVER PRIVATE EXPORT
 ***************************************************/
 
 EXPORT DllCanUnloadNow()
@@ -77,9 +76,10 @@ EXPORT DllCanUnloadNow()
 
 EXPORT DllGetClassObject(RIID clsid, RIID iid, PPV ppv)
 {
-    Initialize();
+    DllInit();
     COM_INIT_PPV_ARG(ppv);
     if (clsid != __uuidof(ExplorerCommand))
         return CLASS_E_CLASSNOTAVAILABLE;
-    return ComCreateInterface<ClassFactory>(iid, ppv);
+    COM_CREATE_INSTANCE(IClassFactory, ClassFactory);
+    return E_NOINTERFACE;
 }

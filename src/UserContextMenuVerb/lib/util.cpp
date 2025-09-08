@@ -4,6 +4,13 @@
  * STRING
 ***************************************************/
 
+//static size_t ToMultiByte(const wchar_t* pwc, size_t wcs, char* pc, size_t cs)
+//{
+//    if (pc == nullptr) cs = 0;
+//    if (wcs > INT_MAX || cs > INT_MAX) throw std::overflow_error("");
+//    return WideCharToMultiByte(CP_UTF8, 0, pwc, (INT)wcs, pc, (INT)cs, nullptr, nullptr);
+//}
+
 static size_t ToWideChar(const char* pc, size_t cs, wchar_t* pwc, size_t wcs)
 {
     if (pwc == nullptr) wcs = 0;
@@ -11,29 +18,9 @@ static size_t ToWideChar(const char* pc, size_t cs, wchar_t* pwc, size_t wcs)
     return MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, pc, (INT)cs, pwc, (INT)wcs);
 }
 
-static size_t ToMultiByte(const wchar_t* pwc, size_t wcs, char* pc, size_t cs)
+String MapStr(std::string_view str)
 {
-    if (pc == nullptr) cs = 0;
-    if (wcs > INT_MAX || cs > INT_MAX) throw std::overflow_error("");
-    return WideCharToMultiByte(CP_UTF8, 0, pwc, (INT)wcs, pc, (INT)cs, nullptr, nullptr);
-}
-
-std::string MapStr(std::wstring_view wstr)
-{
-    std::string str;
-    if (!wstr.empty())
-        str.resize_and_overwrite(
-            ToMultiByte(wstr.data(), wstr.size(), nullptr, 0),
-            [&wstr](char* ptr, size_t count) -> size_t {
-                return ToMultiByte(wstr.data(), wstr.size(), ptr, count);
-            }
-        );
-    return str;
-}
-
-std::wstring MapStr(std::string_view str)
-{
-    std::wstring wstr;
+    String wstr;
     if (!str.empty())
         wstr.resize_and_overwrite(
             ToWideChar(str.data(), str.size(), nullptr, 0),
@@ -50,10 +37,8 @@ std::wstring MapStr(std::string_view str)
 
 BOOL IsKeyDown(IList<INT> keys)
 {
-    for (const auto& key : keys)
-        if (GetAsyncKeyState(key) < 0)
-            return TRUE;
-    return FALSE;
+    return std::all_of(keys.begin(), keys.end(),
+        [](INT key) { return GetAsyncKeyState(key) < 0; });
 }
 
 BOOL IsDarkThemeEnabled()
@@ -65,11 +50,11 @@ BOOL IsDarkThemeEnabled()
     return data == 0 ? TRUE : FALSE;
 }
 
-String GetShellItemPath(ITEMIDLIST* pIDL)
+String GetShellItemIDListPath(LPCITEMIDLIST pIDL)
 {
     String str;
     if (pIDL != nullptr)
-        str.resize_and_overwrite(LONG_MAXPATH,
+        str.resize_and_overwrite(PATH_MAX,
             [&pIDL](wchar_t* ptr, size_t count) -> size_t {
                 auto r = SHGetPathFromIDListEx(pIDL, ptr, (DWORD)count, GPFIDL_DEFAULT);
                 return r ? std::wcslen(ptr) : 0;
@@ -90,7 +75,7 @@ String GetKnownFolderPath(RIID iid)
 String GetModulePath(HMODULE hModule)
 {
     String str;
-    str.resize_and_overwrite(LONG_MAXPATH,
+    str.resize_and_overwrite(PATH_MAX,
         [&](wchar_t* ptr, size_t count) -> size_t {
             return GetModuleFileNameW(hModule, ptr, (DWORD)count);
         }
@@ -199,14 +184,26 @@ DWORD ShellExecute(HWND hWnd, StrView verb, StrView file, StrView args, StrView 
         file.data(), STR_NULL_IF_EMPTY(args), STR_NULL_IF_EMPTY(wdir), scmd);
 }
 
+Optional<String> DragQueryFile(HDROP hDrop, UINT index)
+{
+    String path;
+    path.resize_and_overwrite(
+        DragQueryFileW(hDrop, index, nullptr, 0),
+        [&](wchar_t* ptr, size_t count) -> size_t {
+            return DragQueryFileW(hDrop, index, ptr, UINT(count + 1));
+        }
+    );
+    if (path.empty()) return std::nullopt; return path;
+}
+
 /***************************************************
  * DIALOGS
 ***************************************************/
 
 Optional<Pair<ComStr, INT>> PickIcon(HWND hWnd, StrView path, INT index)
 {
-    auto str = ComAllocStr(LONG_MAXPATH, path);
-    if (PickIconDlg(hWnd, str.get(), LONG_MAXPATH, &index))
+    auto str = ComAllocStr(PATH_MAX, path);
+    if (PickIconDlg(hWnd, str.get(), PATH_MAX, &index))
         return Pair(std::move(str), index);
     return std::nullopt;
 }

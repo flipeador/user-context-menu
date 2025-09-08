@@ -3,16 +3,12 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
-  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
-  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
-  xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
-  xmlns:desktop9="http://schemas.microsoft.com/appx/manifest/desktop/windows10/9"
-  xmlns:desktop10="http://schemas.microsoft.com/appx/manifest/desktop/windows10/10"
+  xmlns:uap7="http://schemas.microsoft.com/appx/manifest/uap/windows10/7"
+  xmlns:uap8="http://schemas.microsoft.com/appx/manifest/uap/windows10/8"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="com uap uap3 desktop desktop4 desktop5 desktop9 desktop10 rescap">
+  IgnorableNamespaces="com uap uap7 uap8 rescap">
 
-  <Identity Name="Flipeador.UserContextMenu.Dev" Publisher="CN=Flipeador" Version="1.0.1.0"/>
+  <Identity Name="Flipeador.UserContextMenu.Dev" Publisher="CN=Flipeador" Version="1.0.0.0"/>
 
   <Properties>
     <DisplayName>User Context Menu (Dev)</DisplayName>
@@ -21,8 +17,8 @@
   </Properties>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0"/>
-    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0"/>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0"/>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0"/>
   </Dependencies>
 
   <Resources>
@@ -31,6 +27,7 @@
 
   <Applications>
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
+      <!-- VisualElements -->
       <uap:VisualElements
         DisplayName="User Context Menu (Dev)"
         Description="Create custom commands in the modern context menu."

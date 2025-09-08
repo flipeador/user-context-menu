@@ -1,32 +1,14 @@
 #pragma once
 
-// NOTE:
-// The IExplorerCommand interface is for the modern context menu.
-// The older context menu must be implemented with IContextMenu.
-
-// Verb ID | COM Class ID (Package.appxmanifest)
-class __declspec(uuid("4529C759-9140-4FF5-A577-C05357BA9508")) ExplorerCommand;
+class __declspec(uuid(PACKAGE_COM_CLSID)) ExplorerCommand;
 
 class ExplorerCommand final
     : public IExplorerCommand
     , public IObjectWithSite
 {
 public:
-    enum class ItemType : uint32_t
-    {
-        // File | Directory
-        File      = 0x00000001, // File
-        Drive     = 0x00000002, // File
-        Directory = 0x00000004, // Directory
-
-        // Background (current folder)
-        Unknown    = 0x00000008, // Background (This PC, Quick Access)
-        Desktop    = 0x00000010, // Background
-        Background = 0x00000020, // Background
-    };
-
-    explicit ExplorerCommand();
-    explicit ExplorerCommand(ExplorerCommand*, Json*);
+    explicit ExplorerCommand(); // root command
+    explicit ExplorerCommand(ExplorerCommand*, Json*); // subcommand
     ~ExplorerCommand();
 
     // IUnknown
@@ -46,22 +28,13 @@ public:
     HRESULT SetSite(IUnknown*) override;
     HRESULT GetSite(RIID, PPV) override;
 private:
-    struct InitObject
-    {
-        Json json;
-        BOOL isDesktop;
-        BOOL isDarkTheme;
-        String background;
-        Vector<Pair<String, DWORD>> items;
-    };
-
-    Json* m_pJson;
-    ExplorerCommand* m_pParent;
-    std::shared_ptr<InitObject> m_ctx;
+    Json* m_pJson{ };
+    ExplorerCommand* m_pParent{ };
+    std::shared_ptr<Command> m_cmd;
     // IUnknown
     LONG m_count = 1;
     // IObjectWithSite
-    IUnknown* m_pSite = nullptr;
+    IUnknown* m_pSite{ };
 
     ExplorerCommand* GetRoot();
     BOOL ProcessCommand(Json& command);

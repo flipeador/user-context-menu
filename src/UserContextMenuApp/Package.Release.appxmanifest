@@ -4,15 +4,17 @@
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:uap7="http://schemas.microsoft.com/appx/manifest/uap/windows10/7"
+  xmlns:uap8="http://schemas.microsoft.com/appx/manifest/uap/windows10/8"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
   xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
   xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
   xmlns:desktop9="http://schemas.microsoft.com/appx/manifest/desktop/windows10/9"
   xmlns:desktop10="http://schemas.microsoft.com/appx/manifest/desktop/windows10/10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="com uap uap3 desktop desktop4 desktop5 desktop9 desktop10 rescap">
+  IgnorableNamespaces="com uap uap3 uap7 uap8 desktop desktop4 desktop5 desktop9 desktop10 rescap">
 
-  <Identity Name="Flipeador.UserContextMenu" Publisher="CN=Flipeador" Version="1.0.1.0"/>
+  <Identity Name="Flipeador.UserContextMenu" Publisher="CN=Flipeador" Version="1.0.2.0"/>
 
   <Properties>
     <DisplayName>User Context Menu</DisplayName>
@@ -21,8 +23,8 @@
   </Properties>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0"/>
-    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0"/>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0"/>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0"/>
   </Dependencies>
 
   <Resources>
@@ -31,6 +33,7 @@
 
   <Applications>
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
+      <!-- VisualElements -->
       <uap:VisualElements
         DisplayName="User Context Menu"
         Description="Create custom commands in the modern context menu."
@@ -41,15 +44,15 @@
       </uap:VisualElements>
       <!-- Extensions. -->
       <Extensions>
-        <!-- Legacy context menus. -->
-        <!-- <desktop9:Extension Category="windows.fileExplorerClassicContextMenuHandler">
+        <!-- Classic context menus. -->
+        <desktop9:Extension Category="windows.fileExplorerClassicContextMenuHandler">
           <desktop9:FileExplorerClassicContextMenuHandler>
-            <desktop9:ExtensionHandler Type="*" Clsid="4529C759-9140-4FF5-A577-C05357BA9508"/>
-            <desktop9:ExtensionHandler Type="Directory" Clsid="4529C759-9140-4FF5-A577-C05357BA9508"/>
-            <desktop9:ExtensionHandler Type="Directory\Background" Clsid="4529C759-9140-4FF5-A577-C05357BA9508"/>
-            <desktop9:ExtensionHandler Type="Drive" Clsid="4529C759-9140-4FF5-A577-C05357BA9508"/>
+            <desktop9:ExtensionHandler Clsid="4529C759-9140-4FF5-A577-C05357BA9508" Type="*"/>
+            <desktop9:ExtensionHandler Clsid="4529C759-9140-4FF5-A577-C05357BA9508" Type="Drive"/>
+            <desktop9:ExtensionHandler Clsid="4529C759-9140-4FF5-A577-C05357BA9508" Type="Directory"/>
+            <desktop9:ExtensionHandler Clsid="4529C759-9140-4FF5-A577-C05357BA9508" Type="Directory\Background"/>
           </desktop9:FileExplorerClassicContextMenuHandler>
-        </desktop9:Extension> -->
+        </desktop9:Extension>
         <!-- Modern context menus. -->
         <desktop4:Extension Category="windows.fileExplorerContextMenus">
           <desktop4:FileExplorerContextMenus>
@@ -70,7 +73,7 @@
         <!-- Register SurrogateServer. -->
         <com:Extension Category="windows.comServer">
           <com:ComServer>
-            <com:SurrogateServer DisplayName="UserContextMenu">
+            <com:SurrogateServer DisplayName="UserContextMenu Shell Extension">
               <com:Class Id="4529C759-9140-4FF5-A577-C05357BA9508" Path="UserContextMenuVerb.dll" ThreadingModel="STA"/>
             </com:SurrogateServer>
           </com:ComServer>

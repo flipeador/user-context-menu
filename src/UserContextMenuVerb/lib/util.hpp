@@ -28,8 +28,7 @@ inline void SafeAssign(T*& rpv, T value)
  * STRING
 ***************************************************/
 
-std::string MapStr(std::wstring_view wstr);
-std::wstring MapStr(std::string_view str);
+String MapStr(std::string_view str);
 
 /***************************************************
  * MISC
@@ -37,7 +36,7 @@ std::wstring MapStr(std::string_view str);
 
 BOOL IsKeyDown(IList<INT> keys);
 BOOL IsDarkThemeEnabled();
-String GetShellItemPath(ITEMIDLIST* pIDL);
+String GetShellItemIDListPath(LPCITEMIDLIST pIDL);
 String GetKnownFolderPath(RIID iid);
 String GetModulePath(HMODULE hModule);
 String GetEnvironmentVariable(StrView name);
@@ -47,6 +46,7 @@ Optional<DWORD> GetFileAttributes(StrView path);
 Generator<String> ParseItems(StrView str, WCHAR sep);
 String FindPath(Path name, DWORD mask = 0, DWORD attr = 0);
 DWORD ShellExecute(HWND hWnd, StrView verb, StrView file, StrView args, StrView wdir, INT scmd);
+Optional<String> DragQueryFile(HDROP hDrop, UINT index);
 
 /***************************************************
  * DIALOGS

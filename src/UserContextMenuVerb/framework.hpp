@@ -4,7 +4,6 @@
  * WINDOWS
 ***************************************************/
 
-#pragma comment(lib, "pathcch.lib")
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "shell32.lib")
 
@@ -12,20 +11,18 @@
 #define NOMINMAX // bruh
 
 #include <windows.h>
-#include <pathcch.h>
 #include <shlwapi.h>
 #include <shellapi.h>
 #include <shlobj_core.h>
 #include <shobjidl_core.h>
 
 #undef ShellExecute
+#undef DragQueryFile
 #undef OutputDebugString
 #undef GetFileAttributes
 #undef GetEnvironmentVariable
 #undef SetEnvironmentVariable
 #undef ExpandEnvironmentStrings
-
-#define LONG_MAXPATH UNICODE_STRING_MAX_CHARS // 32767
 
 /***************************************************
  * STD LIBRARY
@@ -42,7 +39,6 @@
 #include <iterator>
 #include <concepts>
 #include <filesystem>
-#include <type_traits>
 #include <experimental/generator>
 
 template <typename T> using Vector = std::vector<T>;
@@ -57,7 +53,7 @@ using Path = std::filesystem::path;
 
 #define NEW_NOTHROW(_) (new(std::nothrow) _)
 #define STR_OPT_DATA(_) ((_) ? (_)->data() : nullptr)
-#define STR_IF_EMPTY(_1, _2) ((_1).empty() ? (_2) : (_1))
+#define STR_NOT_EMPTY_OR(_1, _2) ((_1).empty() ? (_2) : (_1))
 #define STR_NULL_IF_EMPTY(_) ((_).empty() ? nullptr : (_).data())
 
 /***************************************************
@@ -84,21 +80,23 @@ inline Optional<std::string_view> JsonGetStr(const Json& json)
  * PROJECT
 ***************************************************/
 
+#define PATH_MAX (UNICODE_STRING_MAX_CHARS - 1) // 32766
+
 #define EXTERN extern "C"
 #define EXPORT EXTERN HRESULT
-
-#ifdef _DEBUG
-#define PACKAGE_NAME L"Flipeador.UserContextMenu.Dev_jtjzc90v003vw"
-#else
-#define PACKAGE_NAME L"Flipeador.UserContextMenu_jtjzc90v003vw"
-#endif
 
 using PPV = void**;
 using RIID = const IID&;
 
+struct DllInitObject
+{
+    BOOL isDarkTheme;
+};
+
 // main.cpp
 extern ULONG g_count;
 extern HMODULE g_hModule;
+extern DllInitObject* g_pInitObj;
 
 #include "lib/cef.hpp"
 #include "lib/com.hpp"
@@ -106,5 +104,8 @@ extern HMODULE g_hModule;
 
 #include "Package.hpp"
 #include "ClassFactory.hpp"
+
+#include "Command.hpp"
+#include "ContextMenu.hpp"
 #include "ExplorerCommand.hpp"
 #include "EnumExplorerCommand.hpp"

@@ -90,7 +90,8 @@
       <CallingConvention>StdCall</CallingConvention>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <DisableSpecificWarnings>26495;28251;4456;</DisableSpecificWarnings>
+      <DisableSpecificWarnings>26495;28251;4456;4458;</DisableSpecificWarnings>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -116,7 +117,8 @@
       <CallingConvention>StdCall</CallingConvention>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <DisableSpecificWarnings>26495;28251;4456;</DisableSpecificWarnings>
+      <DisableSpecificWarnings>26495;28251;4456;4458;</DisableSpecificWarnings>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,7 +147,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <CallingConvention>StdCall</CallingConvention>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <DisableSpecificWarnings>26495;28251;4456;</DisableSpecificWarnings>
+      <DisableSpecificWarnings>26495;28251;4456;4458;</DisableSpecificWarnings>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -174,7 +177,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <CallingConvention>StdCall</CallingConvention>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <DisableSpecificWarnings>26495;28251;4456;</DisableSpecificWarnings>
+      <DisableSpecificWarnings>26495;28251;4456;4458;</DisableSpecificWarnings>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -185,6 +189,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ClassFactory.hpp" />
+    <ClInclude Include="Command.hpp" />
+    <ClInclude Include="ContextMenu.hpp" />
     <ClInclude Include="ExplorerCommand.hpp" />
     <ClInclude Include="EnumExplorerCommand.hpp" />
     <ClInclude Include="framework.hpp" />
@@ -196,6 +202,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClassFactory.cpp" />
+    <ClCompile Include="Command.cpp" />
+    <ClCompile Include="ContextMenu.cpp" />
     <ClCompile Include="ExplorerCommand.cpp" />
     <ClCompile Include="EnumExplorerCommand.cpp" />
     <ClCompile Include="main.cpp" />
@@ -203,6 +211,7 @@
     <ClCompile Include="lib\util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ContextMenu.bak" />
     <None Include="cpp.hint" />
     <None Include="source.def" />
   </ItemGroup>

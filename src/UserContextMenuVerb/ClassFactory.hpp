@@ -1,6 +1,7 @@
 #pragma once
 
-class ClassFactory final : public IClassFactory
+class ClassFactory final
+    : public IClassFactory
 {
 public:
     explicit ClassFactory();

@@ -21,21 +21,22 @@ HRESULT EnumExplorerCommand::QueryInterface(RIID iid, PPV ppv)
     return QISearch(this, qit, iid, ppv);
 }
 
-HRESULT EnumExplorerCommand::Clone(IEnumExplorerCommand**)
-{
-    return E_NOTIMPL;
-}
-
-HRESULT EnumExplorerCommand::Next(ULONG count, IExplorerCommand** pExpCmd, ULONG* pFetched)
+HRESULT EnumExplorerCommand::Next(ULONG count, IExplorerCommand** ppExpCmd, ULONG* pFetched)
 {
     ULONG index = 0;
     while (index < count && m_cursor < m_pJson->size())
     {
         auto& command = m_pJson->at(m_cursor++);
-        pExpCmd[index++] = new ExplorerCommand(m_pExpCmd, &command);
+        ppExpCmd[index++] = new ExplorerCommand(m_pExpCmd, &command);
     }
     SafeAssign(pFetched, index);
     return index ? S_OK : S_FALSE;
+}
+
+HRESULT EnumExplorerCommand::Skip(ULONG count)
+{
+    m_cursor += count;
+    return S_OK;
 }
 
 HRESULT EnumExplorerCommand::Reset()
@@ -44,8 +45,7 @@ HRESULT EnumExplorerCommand::Reset()
     return S_OK;
 }
 
-HRESULT EnumExplorerCommand::Skip(ULONG count)
+HRESULT EnumExplorerCommand::Clone(IEnumExplorerCommand**)
 {
-    m_cursor += count;
-    return S_OK;
+    return E_NOTIMPL;
 }

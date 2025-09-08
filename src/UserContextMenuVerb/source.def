@@ -1,7 +1,9 @@
 LIBRARY
 EXPORTS
+    DllInit
     DllFindPath
     DllPickIcon
     DllExtractIcon
+    ; COM SERVER
     DllCanUnloadNow   PRIVATE
     DllGetClassObject PRIVATE

@@ -1,6 +1,7 @@
 #pragma once
 
-class EnumExplorerCommand final : public IEnumExplorerCommand
+class EnumExplorerCommand final
+    : public IEnumExplorerCommand
 {
 public:
     explicit EnumExplorerCommand(ExplorerCommand*, Json*);
@@ -10,13 +11,13 @@ public:
     COM_DEFINE_IUNKNOWN_METHODS;
 
     // IEnumExplorerCommand
-    HRESULT Clone(IEnumExplorerCommand**) override;
     HRESULT Next(ULONG, IExplorerCommand**, ULONG*) override;
-    HRESULT Reset() override;
     HRESULT Skip(ULONG) override;
+    HRESULT Reset() override;
+    HRESULT Clone(IEnumExplorerCommand**) override;
 private:
-    ExplorerCommand* m_pExpCmd;
-    Json* m_pJson;
+    ExplorerCommand* m_pExpCmd{ };
+    Json* m_pJson{ };
     // IUnknown
     LONG m_count = 1;
     // IEnumExplorerCommand
