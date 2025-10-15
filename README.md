@@ -4,9 +4,11 @@ Create custom commands in the [modern context menu][contextmenu] and enable/disa
 
 <p align="center">
   <img alt="Preview" src="assets/preview.png"> <br/> <br/>
-  <img
-    alt="Releases | Direct Download (v1.0.3)"
-    src="https://img.shields.io/badge/releases-direct_download_(v1.0.3)-orange.svg?style=for-the-badge"/>
+  <a href="https://github.com/flipeador/user-context-menu/releases/tag/v1.0.3">
+    <img
+      alt="Releases | Direct Download (v1.0.3)"
+      src="https://img.shields.io/badge/releases-download_(v1.0.3)-orange.svg?style=for-the-badge"/>
+  </a>
   <a href="https://github.com/flipeador/user-context-menu/releases/download/v1.0.3/package.AMD64.7z">
     <img
       alt="AMD64"
