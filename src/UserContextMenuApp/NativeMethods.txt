@@ -1,0 +1,6 @@
+// Structures
+COPYDATASTRUCT
+
+// Functions
+CallWindowProc
+SetWindowLongPtr

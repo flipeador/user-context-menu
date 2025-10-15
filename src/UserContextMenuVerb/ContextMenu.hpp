@@ -2,7 +2,7 @@
 
 #include "framework.hpp"
 
-class __declspec(uuid(PACKAGE_COM_CLSID)) ContextMenu;
+class __declspec(uuid(PACKAGE_CLSID)) ContextMenu;
 
 class ContextMenu final
     : public IContextMenu

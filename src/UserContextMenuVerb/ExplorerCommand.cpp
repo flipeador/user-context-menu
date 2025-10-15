@@ -9,19 +9,13 @@
         return FALSE;                  \
     }
 
-static auto GetCommandRegex(const Json& cmd, std::string_view key)
+static Optional<std::wregex> GetCommandRegex(const Json& cmd, std::string_view key)
 {
-    std::unique_ptr<std::wregex> re;
-    auto regex = JSON_GET_WSTR(cmd["regex"][key]);
+    const auto regex = JSON_GET_WSTR(cmd["regex"][key]);
     if (!regex.empty())
-    {
-        try
-        {
-            re = std::make_unique<std::wregex>(regex);
-        }
-        catch (const std::regex_error&) { /* ignore invalid regex */ };
-    }
-    return re;
+        try { return std::wregex(regex); }
+        catch (const std::regex_error&) {} // ignore invalid regex
+    return std::nullopt;
 }
 
 ExplorerCommand::ExplorerCommand()
@@ -76,11 +70,11 @@ BOOL ExplorerCommand::ProcessCommand(Json& command)
     // File | Drive | Directory
     else
     {
-        auto mode = JSON_GET_STR(command["multi"]["mode"]);
+        const auto mode = JSON_GET_STR(command["multi"]["mode"]);
         RETURN_HIDDEN_IF(mode == "Off" && m_cmd->items.size() > 1);
 
-        auto regexInclude = GetCommandRegex(command, "include");
-        auto regexExclude = GetCommandRegex(command, "exclude");
+        const auto regexInclude = GetCommandRegex(command, "include");
+        const auto regexExclude = GetCommandRegex(command, "exclude");
 
         for (const auto& [item, attr] : m_cmd->items)
         {
@@ -135,7 +129,7 @@ HRESULT ExplorerCommand::Initialize(IShellItemArray* pItems)
             // There is no background in locations like `This PC`.
             ITEMIDLIST* pIDL = nullptr;
             pPersistFolder2->GetCurFolder(&pIDL);
-            m_cmd->background = GetShellItemIDListPath(pIDL);
+            m_cmd->background = GetItemIDListPath(pIDL);
             CoTaskMemFree(pIDL);
 
             pPersistFolder2->Release();
@@ -169,6 +163,9 @@ HRESULT ExplorerCommand::Initialize(IShellItemArray* pItems)
             return S_FALSE;
     }
 
+    // Set environment variables for the last selected item or the background directory.
+    SetCommandEnvVarsPath(m_cmd->items.empty() ? m_cmd->background : m_cmd->items[0].first);
+
     return ProcessCommand(*m_pJson) ? S_OK : S_FALSE;
 }
 
@@ -193,13 +190,9 @@ HRESULT ExplorerCommand::QueryInterface(RIID iid, PPV ppv)
 HRESULT ExplorerCommand::GetState(IShellItemArray* pItems, BOOL, EXPCMDSTATE* pState)
 {
     if (FAILED(Initialize(pItems)))
-    {
         *pState = ECS_HIDDEN;
-    }
     else
-    {
         m_pJson->at("state").get_to(*pState);
-    }
     return S_OK;
 }
 
@@ -207,19 +200,16 @@ HRESULT ExplorerCommand::GetTitle(IShellItemArray*, PWSTR* ppv)
 {
     COM_INIT_PPV_ARG(ppv);
     if (!IS_COMMAND) return E_NOTIMPL;
-    return ComDupStr(JSON_GET_STR(m_pJson->at("title")), ppv);
+    const auto title = JSON_GET_WSTR(m_pJson->at("title"));
+    return ComDupStr(ExpandEnvironmentStrings(title), ppv);
 }
 
 HRESULT ExplorerCommand::GetIcon(IShellItemArray*, PWSTR* ppv)
 {
     COM_INIT_PPV_ARG(ppv);
     if (!IS_COMMAND) return E_NOTIMPL;
-    size_t n = g_pInitObj->isDarkTheme;
-    const auto& icons = m_pJson->at("icons");
-    auto path = JSON_GET_WSTR(icons[n][0]);
-    auto icon = FindFilePath(path);
-    icon = std::format(L"\"{}\",{}", icon, (INT)icons[n][1]);
-    return SHStrDupW(icon.data(), ppv); // "resource",index
+    const auto icon = GetCommandIcon(*m_pJson); // Pair { resource , index }
+    return ComDupStr(std::format(L"\"{}\",{}", icon.first, icon.second), ppv);
 }
 
 HRESULT ExplorerCommand::GetFlags(EXPCMDFLAGS* pFlags)

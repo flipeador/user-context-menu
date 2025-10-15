@@ -1,7 +1,10 @@
 #pragma once
 
-class __declspec(uuid(PACKAGE_COM_CLSID)) ExplorerCommand;
+// Associate the package CLSID with the COM class.
+class __declspec(uuid(PACKAGE_CLSID)) ExplorerCommand;
 
+// Provides an implementation of the IExplorerCommand interface.
+// Exposes methods for enumerating and invoking commands for the modern context menu.
 class ExplorerCommand final
     : public IExplorerCommand
     , public IObjectWithSite

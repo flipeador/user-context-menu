@@ -4,8 +4,18 @@ Create custom commands in the [modern context menu][contextmenu] and enable/disa
 
 <p align="center">
   <img alt="Preview" src="assets/preview.png"> <br/> <br/>
-  <a href="https://github.com/flipeador/user-context-menu/releases/download/v1.0.2/package.x64.7z">
-    <img src="https://img.shields.io/badge/Releases-Direct download (v1.0.2)-orange.svg?style=for-the-badge"/>
+  <img
+    alt="Releases | Direct Download (v1.0.3)"
+    src="https://img.shields.io/badge/releases-direct_download_(v1.0.3)-orange.svg?style=for-the-badge"/>
+  <a href="https://github.com/flipeador/user-context-menu/releases/download/v1.0.3/package.AMD64.7z">
+    <img
+      alt="AMD64"
+      src="https://img.shields.io/badge/-AMD64-red.svg?style=for-the-badge"/>
+  </a>
+  <a href="https://github.com/flipeador/user-context-menu/releases/download/v1.0.3/package.ARM64.7z">
+    <img
+      alt="ARM64"
+      src="https://img.shields.io/badge/-ARM64-blue.svg?style=for-the-badge"/>
   </a>
 </p>
 
@@ -94,10 +104,9 @@ To display the context menu in these locations, enable `Unknown` in **Match type
 | [`%:INSTALL%`][install] | The app's install folder path. |
 | `%:DESKTOP%` | The desktop folder path for the current user. |
 | `%:BACKGROUND%` | The location where the menu is invoked. |
+| `%:ICON%` | The command light/dark icon. |
 
-#### Command line / Arguments
-
-The following variables are only available in **Command line** and **Arguments**:
+The following variables can be specified in **Title**, **Command line** & **Arguments**:
 
 | Variable | Description |
 | --- | --- |
@@ -107,7 +116,7 @@ The following variables are only available in **Command line** and **Arguments**
 | [`%:STEM%`][stem] | The filename without the final extension. |
 | [`%:EXT%`][ext] | The file extension path component. |
 
-The following are the default values for **Command line** and **Arguments**:
+The following are the default values for **Command line** & **Arguments**:
 
 | Command line | Arguments | W. Directory | Multi mode |
 | --- | --- | --- | --- |
@@ -115,6 +124,24 @@ The following are the default values for **Command line** and **Arguments**:
 | `%:PATH%` | `"%:PATH%"` | ANY | `Each` |
 | `%:PATH%` | `"%:NAME%"` | EMPTY | `Join` |
 | `%:PATH%` | `"%:PATH%"` | NOT EMPTY | `Join` |
+
+#### Dialogs
+
+The following variables can be specified in **Command line** & **Arguments**:
+
+| Variable | Description |
+| --- | --- |
+| `%:FILE[:<filename>:]%` | Present a dialog box for selecting a single file. |
+| `%:FOLDER[:<filename>:]%` | Present a dialog box for selecting a single folder. |
+| `%:FILESAVE[:<filename>:]%` | Present a dialog box that offers to save a file. |
+
+The operation is aborted and the command is not executed if any of the dialogs are canceled.
+
+The working directory is used as [the folder][setfolder] that is always selected when the dialog box is opened.
+
+The `filename` parameter specifies [the default file name][setfilename] that appears when the dialog box is opened.
+
+Examples: `%:FILE%` `%:FOLDER:%:NAME%:%` `%:FILESAVE:Document.txt:%`.
 
 </details>
 
@@ -141,10 +168,10 @@ Specifies inclusion and exclusion [RegEx][regex] filters on the name of the sele
 
 This is especially useful to display the context menu depending on the file extension.
 
-For example, the following regular expression is for images:
+For example, the following regular expression is for [raster images][raster]:
 
 ```
-\.(jpe?g|gif|tiff|a?png|webp|avif|jxl)$
+\.(jpe?g|gif|tiff?|a?png|webp|avif|jxl)$
 ```
 
 </details>
@@ -194,7 +221,7 @@ Therefore, avoid double quotation marks with `%:PATH%` in the command line when 
 | Icon | `imageres.dll` `-5322` |
 | File | `%ComSpec%` |
 | Show Window | `Hide` |
-| Command line | `/c mklink /h "%:NAME%.hlnk" "%:NAME%"` |
+| Command line | `/c mklink /h "%:FILESAVE:%:NAME%.hlnk:%" "%:PATH%"` |
 | Match type | `File` |
 | Match name | `⠀` `\.(hlnk)$` |
 
@@ -208,7 +235,7 @@ Therefore, avoid double quotation marks with `%:PATH%` in the command line when 
 | Icon | `shell32.dll` `-133` |
 | File | `%ComSpec%` |
 | Show Window | `Hide` |
-| Command line | `/c mklink "%:NAME%.slnk" "%:NAME%"` |
+| Command line | `/c mklink "%:FILESAVE:%:NAME%.slnk:%" "%:PATH%"` |
 | Match type | `File` |
 | Match name | `⠀` `\.(slnk)$` |
 
@@ -222,7 +249,7 @@ Therefore, avoid double quotation marks with `%:PATH%` in the command line when 
 | Icon | `imageres.dll` `-5382` |
 | File | `%ComSpec%` |
 | Show Window | `Hide` |
-| Command line | `/c mklink /d "%:NAME%.slnk" "%:NAME%"` |
+| Command line | `/c mklink /d "%:FILESAVE:%:NAME%.slnk:%" "%:PATH%"` |
 | Match type | `Directory` |
 | Match name | `⠀` `\.(slnk)$` |
 
@@ -245,9 +272,9 @@ Stack: [WinUI][winui] 3, [.NET 9][net9] (C#), C++23.
 
 Enable [Developer Mode][devmode] on your system if you haven't already done so.
 
-Install [Visual Studio][vs] 2022; add the workloads and components required for [developing with WinUI][winuigs] & C++.
+Install [Visual Studio][vs] 2026; add the workloads and components required for [developing with WinUI][winuigs] & C++.
 
-[Download][downl] or [clone][clone] this repository to your local computer, open [`UserContextMenu.sln`](src/UserContextMenu.sln) with Visual Studio.
+[Download][downl] or [clone][clone] this repository to your local computer, open [`UserContextMenu.slnx`](src/UserContextMenu.slnx) with Visual Studio.
 
 Create a self-signed certificate for app package [signing][signing]:
 1. Open [`Package.appxmanifest`](src/UserContextMenuApp/Package.Release.appxmanifest) from the [Solution Explorer][solexpl] in Visual Studio.
@@ -292,9 +319,12 @@ Select the **Release** configuration, right click the `UserContextMenuApp` proje
 [fpathfmt]: https://learn.microsoft.com/dotnet/standard/io/file-path-formats
 [expenvstr]: https://learn.microsoft.com/windows/win32/api/processenv/nf-processenv-expandenvironmentstringsw
 [contextmenu]: https://learn.microsoft.com/windows/apps/get-started/make-apps-great-for-windows#context-menus
-
+[setfolder]: https://learn.microsoft.com/windows/win32/api/shobjidl_core/nf-shobjidl_core-ifiledialog-setfolder
+[setfilename]: https://learn.microsoft.com/windows/win32/api/shobjidl_core/nf-shobjidl_core-ifiledialog-setfilename
 [local]: https://learn.microsoft.com/uwp/api/windows.storage.applicationdata.localfolder
 [install]: https://learn.microsoft.com/uwp/api/windows.applicationmodel.package.installedlocation
 
 [downl]: https://github.com/flipeador/user-context-menu/archive/refs/heads/main.zip
 [clone]: https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository
+
+[raster]: https://en.wikipedia.org/wiki/Raster_graphics

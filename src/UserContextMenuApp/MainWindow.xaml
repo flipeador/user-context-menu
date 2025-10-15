@@ -17,7 +17,7 @@
         </Grid.RowDefinitions>
 
         <!-- TitleBar -->
-        <TitleBar x:Name="e_titleBar" Title="User Context Menu • Flipeador" Subtitle="1.0.2">
+        <TitleBar x:Name="e_titleBar" Title="User Context Menu • Flipeador" Subtitle="1.0.3">
             <TitleBar.IconSource>
                 <BitmapIconSource ShowAsMonochrome="False" UriSource="/Assets/icon.png"/>
             </TitleBar.IconSource>
@@ -28,8 +28,7 @@
             </TitleBar.RightHeader>
         </TitleBar>
 
-        <!-- Frame -->
+        <!-- Root Frame -->
         <Frame x:Name="e_rootFrame" Grid.Row="1" NavigationFailed="OnNavigationFailed"/>
     </Grid>
-
 </Window>

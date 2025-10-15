@@ -33,7 +33,7 @@
     }                                           \
     HRESULT QueryInterface(RIID, PPV) override;
 
-#define COM_QUERY_SERVICE(punk, guid, ppv)                \
+#define COM_QUERY_SERVICE(punk, guid, ppv) \
     IUnknown_QueryService(punk, guid, IID_PPV_ARGS(&ppv))
 
 template <typename T>
@@ -70,7 +70,7 @@ inline auto ComAllocStr(size_t capacity, StrView str)
 {
     auto ptr = (PWSTR)CoTaskMemAlloc((capacity + 1) * sizeof(WCHAR));
     if (ptr == nullptr) throw std::bad_alloc();
-    auto count = str.copy(ptr, std::min(capacity, str.size()));
+    const auto count = str.copy(ptr, std::min(capacity, str.size()));
     ptr[count] = L'\0';
     return ComStr(ptr);
 }
@@ -91,4 +91,9 @@ inline auto ComDupStr(std::string_view sv, PWSTR* ppwc)
     // Assuming `SHStrDupA` uses `MultiByteToWideChar` with `CP_ACP`:
     // Set the active code page to UTF-8 (65001) so `CP_ACP=CP_UTF8`.
     return SHStrDupA(sv.data(), ppwc); // CP_ACP/CP_UTF8 to UTF-16 (CoTaskMem)
+}
+
+inline auto ComDupStr(StrView sv, PWSTR* ppwc)
+{
+    return SHStrDupW(sv.data(), ppwc);
 }

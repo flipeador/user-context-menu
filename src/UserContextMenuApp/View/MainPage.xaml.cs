@@ -1,26 +1,62 @@
-using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Navigation;
 using Microsoft.Web.WebView2.Core;
+using System;
+using System.Text;
 using UserContextMenuApp.Model;
 using Windows.Storage;
 using Windows.System;
+using Windows.Win32.System.DataExchange;
 
 namespace UserContextMenuApp.View
 {
     public sealed partial class MainPage : Page
     {
+        private MainWindow m_window;
+
         private readonly CommandViewModel m_commandViewModel = new();
         private readonly PackageViewModel m_packageViewModel = new();
 
         public MainPage()
         {
             InitializeComponent();
-            LoadCommands(null, null);
         }
 
-        private void LoadCommands(Object sender, RoutedEventArgs args)
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            m_window = e.Parameter as MainWindow;
+        }
+
+        private void OnPageLoaded(object sender, RoutedEventArgs e)
+        {
+            LoadCommands(null, null);
+            m_window.AddMessageHandler(OnMessage);
+        }
+
+        private void OnPageUnloaded(object sender, RoutedEventArgs e)
+        {
+            m_window.RemoveMessageHandler(OnMessage);
+        }
+
+        private unsafe nint? OnMessage(uint msg, nint wParam, nint lParam)
+        {
+            if (msg == 0x004A) // WM_COPYDATA
+            {
+                var data = (COPYDATASTRUCT*)lParam;
+                var result = Encoding.Unicode.GetString((byte*)data->lpData, (int)data->cbData);
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+                    e_debugInfo.Text += $"[{timestamp}] {result}\n";
+                });
+                return 1;
+            }
+            return null;
+        }
+
+        private void LoadCommands(object sender, RoutedEventArgs args)
         {
             e_commands.SelectedItem = null;
             m_commandViewModel.Initialize();
@@ -31,13 +67,13 @@ namespace UserContextMenuApp.View
             m_packageViewModel.Initialize();
         }
 
-        private void AddChildCommand(Object sender, RoutedEventArgs args)
+        private void AddChildCommand(object sender, RoutedEventArgs args)
         {
             if (e_commands.SelectedNode?.Content is CommandItem command)
                 command.Children.Add(new());
         }
 
-        private void RemoveSelectedCommand(Object sender, RoutedEventArgs args)
+        private void RemoveSelectedCommand(object sender, RoutedEventArgs args)
         {
             if (e_commands.SelectedNode?.Content is CommandItem command)
             {
@@ -49,7 +85,7 @@ namespace UserContextMenuApp.View
             }
         }
 
-        private void SaveCommands(Object sender, RoutedEventArgs args)
+        private void SaveCommands(object sender, RoutedEventArgs args)
         {
             if (e_commands.SelectedNode?.Content is CommandItem command)
             {
@@ -154,7 +190,7 @@ namespace UserContextMenuApp.View
             }
         }
 
-        private void Packages_Toggle(Object sender, RoutedEventArgs e)
+        private void Packages_Toggle(object sender, RoutedEventArgs e)
         {
             var checkbox = sender as CheckBox;
             var keyPath = checkbox.Tag as string;
@@ -163,52 +199,46 @@ namespace UserContextMenuApp.View
                 checkbox.IsChecked = !checkbox.IsChecked;
         }
 
-        private void LaunchLocalFolder(Object sender, RoutedEventArgs args)
+        private void LaunchLocalFolder(object sender, RoutedEventArgs args)
         {
             _ = Launcher.LaunchFolderAsync(ApplicationData.Current.LocalFolder);
         }
 
-        private void Expander_Loaded_Collapse(Object sender, RoutedEventArgs args)
+        private void Expander_Loaded_Collapse(object sender, RoutedEventArgs args)
         {
             var expander = sender as Expander;
             expander.IsExpanded = false;
         }
 
-        private void TextBox_KeyDown_SingleLine(Object sender, KeyRoutedEventArgs args)
+        private void TextBox_KeyDown_SingleLine(object sender, KeyRoutedEventArgs args)
         {
             if (args.Key is VirtualKey.Space or VirtualKey.Enter)
                 args.Handled = true;
         }
 
-        //public void AutoSuggestBox_TextChanged_Path(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
-        //{
-        //    if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-        //        sender.ItemsSource = Util.IO.Enumerate(sender.Text).Take(100);
-        //}
-
-        private async void Button_Click_PickFile(Object sender, RoutedEventArgs args)
+        private async void Button_Click_PickFile(object sender, RoutedEventArgs args)
         {
             var button = sender as Button;
             var textBox = button.Tag as TextBox;
-            var file = await Util.IO.PickFile(button);
+            var file = await Util.PickFile(button);
             if (file != null) textBox.Text = file.Path;
         }
 
-        private async void Button_Click_PickFolder(Object sender, RoutedEventArgs args)
+        private async void Button_Click_PickFolder(object sender, RoutedEventArgs args)
         {
             var button = sender as Button;
             var textBox = button.Tag as TextBox;
-            var folder = await Util.IO.PickFolder(button);
+            var folder = await Util.PickFolder(button);
             if (folder != null) textBox.Text = folder.Path;
         }
 
-        private void Button_Click_PickIcon(Object sender, RoutedEventArgs args)
+        private void Button_Click_PickIcon(object sender, RoutedEventArgs args)
         {
             var button = sender as Button;
             var textBox = FindName(button.Tag as string) as TextBox;
             var numberBox = FindName($"{button.Tag}Index") as NumberBox;
             var path = UserContextMenuVerb.FindPath(textBox.Text);
-            var icon = Util.IO.PickIcon(button, path, (int)numberBox.Value);
+            var icon = Util.PickIcon(button, path, (int)numberBox.Value);
             if (icon != null)
             {
                 textBox.Text = icon?.Item1;
@@ -216,35 +246,35 @@ namespace UserContextMenuApp.View
             }
         }
 
-        private void Pivot_SelectionChanged(Object sender, SelectionChangedEventArgs args)
+        private void Pivot_SelectionChanged(object sender, SelectionChangedEventArgs args)
         {
             var selectedPivotItem = m_pivot.SelectedItem as PivotItem;
             if (selectedPivotItem == m_browserPivotItem)
-                if (string.IsNullOrEmpty(m_webviewUri.Text))
-                    m_webview.Source = new Uri(App.s_repositoryUrl);
+                if (string.IsNullOrEmpty(e_webviewUri.Text))
+                    e_webview.Source = new Uri(App.s_repositoryUrl);
         }
 
-        private void Browser_Navigate(Object sender, RoutedEventArgs args)
+        private void Browser_Navigate(object sender, RoutedEventArgs args)
         {
             try
             {
-                m_webview.Source = new Uri(m_webviewUri.Text);
+                e_webview.Source = new Uri(e_webviewUri.Text);
             }
             catch { }
         }
 
-        private void Browser_NavigateTo(Object sender, RoutedEventArgs args)
+        private void Browser_NavigateTo(object sender, RoutedEventArgs args)
         {
             m_pivot.SelectedItem = m_browserPivotItem;
             var element = sender as FrameworkElement;
             var uri = element.Tag.ToString().Trim('/');
-            if (uri != m_webview.Source.ToString().Trim('/'))
-                m_webview.Source = new Uri(uri);
+            if (uri != e_webview.Source.ToString().Trim('/'))
+                e_webview.Source = new Uri(uri);
         }
 
         private void WebView_NavigationStarting(WebView2 sender, CoreWebView2NavigationStartingEventArgs args)
         {
-            m_webviewUri.Text = args.Uri;
+            e_webviewUri.Text = args.Uri;
         }
     }
 }

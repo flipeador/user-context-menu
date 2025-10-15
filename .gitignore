@@ -6,4 +6,5 @@
 /src/**/*.user
 
 # UserContextMenuApp
+/src/UserContextMenuApp/AppPackages/
 /src/UserContextMenuApp/UserContextMenuKey.pfx

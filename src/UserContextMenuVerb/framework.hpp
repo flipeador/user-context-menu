@@ -13,9 +13,13 @@
 #include <windows.h>
 #include <shlwapi.h>
 #include <shellapi.h>
+#include <combaseapi.h>
 #include <shlobj_core.h>
 #include <shobjidl_core.h>
 
+#undef interface
+
+#undef SendMessage
 #undef ShellExecute
 #undef DragQueryFile
 #undef OutputDebugString
@@ -38,18 +42,21 @@
 #include <iostream>
 #include <iterator>
 #include <concepts>
+#include <optional>
+#include <functional>
 #include <filesystem>
 #include <experimental/generator>
-
-template <typename T> using Vector = std::vector<T>;
-template <typename T> using Optional = std::optional<T>;
-template <typename T> using IList = std::initializer_list<T>;
-template <typename T1, typename T2> using Pair = std::pair<T1, T2>;
-template <typename T> using Generator = std::experimental::generator<T>;
 
 using String = std::wstring;
 using StrView = std::wstring_view;
 using Path = std::filesystem::path;
+
+template <typename T> using Vector = std::vector<T>;
+template <typename T> using Optional = std::optional<T>;
+template <typename T> using Function = std::function<T>;
+template <typename T> using IList = std::initializer_list<T>;
+template <typename T1, typename T2> using Pair = std::pair<T1, T2>;
+template <typename T> using Generator = std::experimental::generator<T>;
 
 #define NEW_NOTHROW(_) (new(std::nothrow) _)
 #define STR_OPT_DATA(_) ((_) ? (_)->data() : nullptr)
@@ -80,16 +87,20 @@ inline Optional<std::string_view> JsonGetStr(const Json& json)
  * PROJECT
 ***************************************************/
 
-#define PATH_MAX (UNICODE_STRING_MAX_CHARS - 1) // 32766
+// Exports must be declared in the module-definition file (source.def).
+#define EXPORT extern "C"
 
-#define EXTERN extern "C"
-#define EXPORT EXTERN HRESULT
+constexpr uint16_t GUID_MAX = 39;    // CHARS_IN_GUID
+constexpr uint16_t PATH_MAX = 32767; // UNICODE_STRING_MAX_CHARS
 
-using PPV = void**;
-using RIID = const IID&;
+using PPV = PVOID*;
+using RGUID  = const GUID&;  // globally unique identifier
+using RIID   = const IID&;   // interface identifier
+using RCLSID = const CLSID&; // class identifier
 
 struct DllInitObject
 {
+    HWND hWnd;
     BOOL isDarkTheme;
 };
 

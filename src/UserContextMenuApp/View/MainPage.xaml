@@ -10,6 +10,8 @@
     xmlns:co="using:UserContextMenuApp.Controls"
     xmlns:cc="using:CommunityToolkit.WinUI.Controls"
     mc:Ignorable="d"
+    Loaded="OnPageLoaded"
+    Unloaded="OnPageUnloaded"
     NavigationCacheMode="Required">
 
     <Page.Resources>
@@ -630,11 +632,12 @@
                     </StackPanel>
                 </ScrollViewer>
             </PivotItem>
+            <!-- Browser -->
             <PivotItem
                 x:Name="m_browserPivotItem"
                 Header="Browser">
                 <Grid
-                    Margin="0,10,0,0"
+                    Margin="0,10,0,10"
                     RowSpacing="10"
                     ColumnSpacing="10"
                     RowDefinitions="Auto,*"
@@ -646,7 +649,7 @@
                         <FontIcon Glyph="&#xE80F;"/>
                     </Button>
                     <TextBox
-                        x:Name="m_webviewUri"
+                        x:Name="e_webviewUri"
                         Grid.Column="1"/>
                     <Button
                         Grid.Column="2"
@@ -655,11 +658,17 @@
                         <FontIcon Glyph="&#xF6FA;"/>
                     </Button>
                     <WebView2
-                        x:Name="m_webview"
+                        x:Name="e_webview"
                         Grid.Row="1"
                         Grid.ColumnSpan="3"
                         NavigationStarting="WebView_NavigationStarting"/>
                 </Grid>
+            </PivotItem>
+            <!-- Debug -->
+            <PivotItem Header="Debug">
+                <ScrollViewer Margin="0,10,0,10" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="e_debugInfo" IsTextSelectionEnabled="True" FontFamily="Consolas"/>
+                </ScrollViewer>
             </PivotItem>
         </Pivot>
     </Grid>

@@ -31,6 +31,34 @@ String MapStr(std::string_view str)
     return wstr;
 }
 
+bool StrReplace(String& str, const std::wregex& pattern, const Function<Optional<String>(const std::wsmatch&)>& fn)
+{
+    String dest;
+    auto r = StrReplace(dest, str, pattern, fn);
+    str = std::move(dest);
+    return r;
+}
+
+bool StrReplace(String& dest, const String& src, const std::wregex& pattern, const Function<Optional<String>(const std::wsmatch&)>& fn)
+{
+    std::wsmatch match;
+    auto begin = src.cbegin();
+    const auto last = src.cend();
+
+    while (std::regex_search(begin, last, match, pattern))
+    {
+        dest.append(begin, match[0].first);
+        const auto replacement = fn(match);
+        if (!replacement) return false;
+        dest.append(*replacement);
+        begin = match[0].second;
+    }
+
+    dest.append(begin, last);
+
+    return true;
+}
+
 /***************************************************
  * MISC
 ***************************************************/
@@ -41,41 +69,19 @@ BOOL IsKeyDown(IList<INT> keys)
         [](INT key) { return GetAsyncKeyState(key) < 0; });
 }
 
-BOOL IsDarkThemeEnabled()
+INT GetSystemColorScheme()
 {
     DWORD data, size = sizeof(data);
-    SHGetValueA(HKEY_CURRENT_USER,
-        "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-        "AppsUseLightTheme", nullptr, &data, &size);
-    return data == 0 ? TRUE : FALSE;
-}
-
-String GetShellItemIDListPath(LPCITEMIDLIST pIDL)
-{
-    String str;
-    if (pIDL != nullptr)
-        str.resize_and_overwrite(PATH_MAX,
-            [&pIDL](wchar_t* ptr, size_t count) -> size_t {
-                auto r = SHGetPathFromIDListEx(pIDL, ptr, (DWORD)count, GPFIDL_DEFAULT);
-                return r ? std::wcslen(ptr) : 0;
-            }
-        );
-    return str;
-}
-
-String GetKnownFolderPath(RIID iid)
-{
-    wchar_t* pPath = nullptr;
-    auto hr = SHGetKnownFolderPath(iid, KF_FLAG_DEFAULT, nullptr, &pPath);
-    String str = SUCCEEDED(hr) ? pPath : L"";
-    CoTaskMemFree(pPath);
-    return str;
+    SHGetValueW(HKEY_CURRENT_USER,
+        L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+        L"AppsUseLightTheme", nullptr, &data, &size);
+    return data == 0 ? TRUE : FALSE; // 0 = Light | 1 = Dark
 }
 
 String GetModulePath(HMODULE hModule)
 {
     String str;
-    str.resize_and_overwrite(PATH_MAX,
+    str.resize_and_overwrite(PATH_MAX - 1,
         [&](wchar_t* ptr, size_t count) -> size_t {
             return GetModuleFileNameW(hModule, ptr, (DWORD)count);
         }
@@ -130,17 +136,18 @@ Generator<String> ParseItems(StrView str, WCHAR sep)
         if (chr == L'"')
             quote = !quote;
         else if (quote)
-            item += chr;
+            item.push_back(chr);
         else if (chr != sep)
         {
             if (chr == L' ')
             {
                 if (!item.empty())
-                    temp += chr;
+                    temp.push_back(chr);
             }
             else
             {
-                item += temp + chr;
+                item.append(temp);
+                item.push_back(chr);
                 temp.clear();
             }
         }
@@ -154,56 +161,166 @@ Generator<String> ParseItems(StrView str, WCHAR sep)
         co_yield item;
 }
 
-String FindPath(Path name, DWORD mask, DWORD attr)
+String FindPath(Path name, DWORD attm, DWORD attv)
 {
-    if (name.empty() || name.is_absolute())
-        return name.lexically_normal();
+    if (name.empty() || name.is_absolute()) return name;
     const auto path = GetEnvironmentVariable(L"PATH");
     for (const auto& item : ParseItems(path, L';'))
     {
         if (const auto path = item / name; path.is_absolute())
         {
-            const auto attr2 = GetFileAttributes(path.wstring());
-            if (attr2 && BITMSK(*attr2, mask, attr))
-                return path.lexically_normal();
+            const auto attr = GetFileAttributes(path.wstring());
+            if (attr && BITMSK(*attr, attm, attv)) return path;
         }
     }
     return { };
 }
 
-DWORD ShellExecute(HWND hWnd, StrView verb, StrView file, StrView args, StrView wdir, INT scmd)
+String StringFromGUID(RGUID id)
+{
+    String str;
+    str.resize_and_overwrite(GUID_MAX,
+        [&](wchar_t* ptr, size_t count) -> size_t {
+            return StringFromGUID2(id, ptr, (INT)count);
+        }
+    );
+    return str;
+}
+
+String GetKnownFolderPath(RGUID id)
+{
+    PWSTR pPath = nullptr;
+    const auto hr = SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, NULL, &pPath);
+    String str = SUCCEEDED(hr) ? pPath : L"";
+    CoTaskMemFree(pPath);
+    return str;
+}
+
+String GetItemIDListPath(LPCITEMIDLIST pIDL)
+{
+    String str;
+    if (pIDL != nullptr)
+        str.resize_and_overwrite(PATH_MAX - 1,
+            [&pIDL](wchar_t* ptr, size_t count) -> size_t {
+                auto r = SHGetPathFromIDListEx(pIDL, ptr, (DWORD)count, GPFIDL_DEFAULT);
+                return r ? std::wcslen(ptr) : 0;
+            }
+        );
+    return str;
+}
+
+HANDLE ShellExecute(HWND hWnd, StrView verb, StrView file, StrView args, StrView wdir, INT scmd, UINT flags)
 {
     if (verb == L"MsgBox") // for debugging purposes
     {
         const auto text = std::format(L"File: {}\nArgs: {}\nWDir: {}", file, args, wdir);
         MessageBoxW(hWnd, text.data(), PACKAGE_NAME, MB_OK);
-        return NO_ERROR;
+        return INVALID_HANDLE_VALUE;
     }
 
-    return (DWORD)(INT_PTR)ShellExecuteW(hWnd, STR_NULL_IF_EMPTY(verb),
-        file.data(), STR_NULL_IF_EMPTY(args), STR_NULL_IF_EMPTY(wdir), scmd);
+    SHELLEXECUTEINFOW sei {
+        sizeof(SHELLEXECUTEINFOW),
+        flags,
+        hWnd,
+        STR_NULL_IF_EMPTY(verb),
+        STR_NULL_IF_EMPTY(file),
+        STR_NULL_IF_EMPTY(args),
+        STR_NULL_IF_EMPTY(wdir),
+        scmd
+    };
+
+    if (!ShellExecuteExW(&sei)) return NULL; // error
+    return sei.hProcess ? sei.hProcess : INVALID_HANDLE_VALUE;
 }
 
-Optional<String> DragQueryFile(HDROP hDrop, UINT index)
+//Optional<String> DragQueryFile(HDROP hDrop, UINT index)
+//{
+//    String path;
+//    path.resize_and_overwrite(
+//        DragQueryFileW(hDrop, index, nullptr, 0),
+//        [&](wchar_t* ptr, size_t count) -> size_t {
+//            return DragQueryFileW(hDrop, index, ptr, UINT(count + 1));
+//        }
+//    );
+//    if (path.empty()) return std::nullopt; return path;
+//}
+
+/***************************************************
+ * MESSAGES
+***************************************************/
+
+Optional<LRESULT> SendMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT timeout, UINT flags)
 {
-    String path;
-    path.resize_and_overwrite(
-        DragQueryFileW(hDrop, index, nullptr, 0),
-        [&](wchar_t* ptr, size_t count) -> size_t {
-            return DragQueryFileW(hDrop, index, ptr, UINT(count + 1));
-        }
-    );
-    if (path.empty()) return std::nullopt; return path;
+    DWORD_PTR lResult = 0;
+    if (SendMessageTimeoutW(hWnd, msg, wParam, lParam, flags, timeout, &lResult))
+        return static_cast<LRESULT>(lResult);
+    return std::nullopt;
 }
 
 /***************************************************
  * DIALOGS
 ***************************************************/
 
-Optional<Pair<ComStr, INT>> PickIcon(HWND hWnd, StrView path, INT index)
+String FileSaveDialog(const Function<HRESULT(IFileSaveDialog&)>& fn)
 {
-    auto str = ComAllocStr(PATH_MAX, path);
-    if (PickIconDlg(hWnd, str.get(), PATH_MAX, &index))
+    String item;
+    IFileSaveDialog* pFileSaveDialog;
+    if (SUCCEEDED(CoCreateInstance(CLSID_FileSaveDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileSaveDialog))))
+    {
+        if (SUCCEEDED(fn(*pFileSaveDialog)))
+        {
+            IShellItem* pItem;
+            if (SUCCEEDED(pFileSaveDialog->GetResult(&pItem)))
+            {
+                PWSTR pName;
+                if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pName)))
+                {
+                    item.assign(pName);
+                    CoTaskMemFree(pName);
+                }
+                pItem->Release();
+            }
+        }
+        pFileSaveDialog->Release();
+    }
+    return item;
+}
+
+Vector<String> FileOpenDialog(const Function<HRESULT(IFileOpenDialog&)>& fn)
+{
+    Vector<String> items;
+    IFileOpenDialog* pFileOpenDialog;
+    if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileOpenDialog))))
+    {
+        if (SUCCEEDED(fn(*pFileOpenDialog)))
+        {
+            IShellItemArray* pItems;
+            if (SUCCEEDED(pFileOpenDialog->GetResults(&pItems)))
+            {
+                DWORD index = 0;
+                IShellItem* pItem;
+                while (SUCCEEDED(pItems->GetItemAt(index++, &pItem)))
+                {
+                    PWSTR pName;
+                    if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pName)))
+                    {
+                        items.push_back(pName);
+                        CoTaskMemFree(pName);
+                    }
+                    pItem->Release();
+                }
+                pItems->Release();
+            }
+        }
+        pFileOpenDialog->Release();
+    }
+    return items;
+}
+
+Optional<Pair<ComStr,INT>> PickIconDialog(HWND hWnd, StrView path, INT index)
+{
+    auto str = ComAllocStr(PATH_MAX - 1, path); // in/out
+    if (PickIconDlg(hWnd, str.get(), PATH_MAX - 1, &index))
         return Pair(std::move(str), index);
     return std::nullopt;
 }
